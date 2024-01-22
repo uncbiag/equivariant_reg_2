@@ -1,0 +1,10 @@
+*.ipynb
+activate
+constricon_dir
+results
+evaluation_results
+files/
+__pycache__/
+*.swo
+*.swp
+*.trch
