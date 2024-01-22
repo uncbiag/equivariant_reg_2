@@ -1,4 +1,3 @@
-
 from icon_registration.losses import ICONLoss, flips
 import icon_registration.network_wrappers as network_wrappers
 import torch

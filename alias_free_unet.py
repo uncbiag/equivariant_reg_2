@@ -20,9 +20,13 @@ class NoDownsampleNet(nn.Module):
         DIM = output_dim
         self.convs = nn.ModuleList([])
         self.batchnorms = nn.ModuleList([self.BatchNorm(DIM) for _ in range(3)])
-        self.convs.append(self.Conv(1, DIM, 7, padding="same"))
-        for i in range(6):
-            self.convs.append(self.Conv(DIM, DIM, 7, padding="same"))
+        self.convs.append(self.Conv(1, DIM, 3, padding="same"))
+        for i in range(3):
+            self.convs.append(self.Conv(DIM, DIM, 3, padding="same"))
+        for i in range(3):
+            self.convs.append(self.Conv(DIM, DIM, 3, padding="same", dilation=2))
+        for i in range(3):
+            self.convs.append(self.Conv(DIM, DIM, 3, padding="same", dilation=4))
 
     def forward(self, x):
         x = self.convs[0](x)
@@ -33,6 +37,8 @@ class NoDownsampleNet(nn.Module):
             y = self.convs[i + 1](x)
             y = torch.relu(y)
             y = self.convs[i + 4](y)
+            y = torch.relu(y)
+            y = self.convs[i + 7](y)
 
             x = y + x
 

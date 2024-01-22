@@ -110,7 +110,7 @@ class AttentionRegistration(icon_registration.RegistrationModule):
 
 
 ds1, ds2 = icon_registration.data.get_dataset_retina(
-    include_boundary=False, scale=0.8, fixed_vertical_offset=200
+    include_boundary=False, scale=0.8, fixed_vertical_offset=200, split="test"
 )
 sample_batch = next(iter(ds2))[0]
 plt.imshow(torchvision.utils.make_grid(sample_batch[:12], nrow=4)[0])
@@ -170,6 +170,9 @@ net.to(device)
 optim = torch.optim.Adam(net.parameters(), lr=0.0003)
 curves = icon.train_datasets(net, optim, ds1, ds2, epochs=45)
 plt.plot(np.array(curves)[:, :3])
+
+footsteps.plot("train curve")
+plt.plot(np.array(curves)[250:, :3])
 
 footsteps.plot("train curve")
 
@@ -232,3 +235,25 @@ features = unet(torch.nn.functional.avg_pool2d(image_A, 2).cuda())
 for i in range(14):
     show(features[:, i:])
     footsteps.plot("features")
+ds1, ds2 = icon_registration.data.get_dataset_retina(
+    include_boundary=False, scale=0.8, fixed_vertical_offset=200
+)
+image_A = next(iter(ds1))[0].to(device)
+image_B = next(iter(ds2))[0].to(device)
+net(image_A, image_B)
+plt.subplot(2, 2, 1)
+show(image_A)
+plt.subplot(2, 2, 2)
+show(image_B)
+plt.subplot(2, 2, 3)
+show(net.warped_image_A)
+plt.contour(
+    torchvision.utils.make_grid(net.phi_AB_vectorfield[:6], nrow=3)[0].cpu().detach()
+)
+plt.contour(
+    torchvision.utils.make_grid(net.phi_AB_vectorfield[:6], nrow=3)[1].cpu().detach()
+)
+plt.subplot(2, 2, 4)
+show(net.warped_image_A - image_B)
+
+footsteps.plot("after_registration")
