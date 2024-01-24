@@ -177,9 +177,9 @@ class CollectLayerwiseRegularizer(network_wrappers.RegistrationModule):
         )
 
     def prepare_for_viz(self, image_A, image_B):
-        self.phi_AB = self.regis_net(image_A, image_B)
+        self.phi_AB = self.regis_net(image_A, image_B)[0]
         self.phi_AB_vectorfield = self.phi_AB(self.identity_map)
-        self.phi_BA = self.regis_net(image_B, image_A)
+        self.phi_BA = self.regis_net(image_B, image_A)[0]
         self.phi_BA_vectorfield = self.phi_BA(self.identity_map)
         self.warped_image_A = self.as_function(image_A)(self.phi_AB_vectorfield)
         self.warped_image_B = self.as_function(image_B)(self.phi_BA_vectorfield)

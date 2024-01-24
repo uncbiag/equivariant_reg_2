@@ -48,27 +48,22 @@ footsteps.plot("before_registration")
 net.train()
 net.to(device)
 optim = torch.optim.Adam(net.parameters(), lr=0.0003)
-curves = icon.train_datasets(net, optim, ds1, ds2, epochs=45)
-plt.plot(np.array(curves)[:, :3])
-
-footsteps.plot("train curve")
-plt.plot(np.array(curves)[250:, :3])
-
-footsteps.plot("train curve")
+for _ in range(10):
+    curves = icon.train_datasets(net, optim, ds1, ds2, epochs=4)
 
 
-visualize(image_A, image_B, net)
-footsteps.plot("after_registration")
+    visualize(image_A, image_B, net)
+    footsteps.plot("after_registration")
 
 
-firststep_net = icon.losses.DiffusionRegularizedNet(
-    net.regis_net.phi.regis_net, icon.LNCC(sigma=4), lmbda=1.5
-)
-firststep_net.assign_identity_map(sample_batch.shape)
-firststep_net.cuda()
+    firststep_net = icon.losses.DiffusionRegularizedNet(
+        net.regis_net.phi.regis_net, icon.LNCC(sigma=4), lmbda=1.5
+    )
+    firststep_net.assign_identity_map(sample_batch.shape)
+    firststep_net.cuda()
 
-visualize(image_A, image_B, firststep_net)
-footsteps.plot("just transformer")
+    visualize(image_A, image_B, firststep_net)
+    footsteps.plot("just transformer")
 
 ds1, ds2 = icon_registration.data.get_dataset_retina(
     include_boundary=False, scale=0.8, fixed_vertical_offset=200, split="test"
