@@ -39,10 +39,10 @@ def pad_im(im, n):
     return new_im
 
 class AttentionRegistration(icon_registration.RegistrationModule):
-    def __init__(self, net, dimension=2):
+    def __init__(self, net, dimension=2, feature_dimension=128):
         super().__init__()
         self.net = net
-        self.dim = 128
+        self.dim = feature_dimension
         self.dimension = dimension
         
         self.padding = 9
@@ -148,10 +148,10 @@ def make_network(input_shape, dimension):
       icon.network_wrappers.DownsampleRegistration(
         icon.FunctionFromVectorField(ar), dimension), dimension)
     ts = icon.TwoStepRegistration(
-        icon.FunctionFromVectorField(icon.networks.tallUNet2(dimension=dimension)),
+        icon.DownsampleRegistration(icon.FunctionFromVectorField(icon.networks.tallUNet2(dimension=dimension)), dimension=dimension),
         icon.FunctionFromVectorField(icon.networks.tallUNet2(dimension=dimension)))
     ts = TwoStepLayerwiseRegularizer(
-        DiffusionLayerwiseRegularizer(inner_net, 1.5),
+        DiffusionLayerwiseRegularizer(inner_net, .02),
         GradientICONLayerwiseRegularizer(ts, 1.5))
         
     net = CollectLayerwiseRegularizer(ts, icon.LNCC(sigma=4))
