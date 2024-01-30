@@ -47,7 +47,6 @@ import icon_registration.network_wrappers
 utils.log(net.regis_net.load_state_dict(torch.load(weights_path), strict=False))
 
 #net.regis_net = net.regis_net.phi
-net.regis_net = net.regis_net.phi
 
 net.eval()
 
@@ -78,10 +77,17 @@ for case in cases[:1]:
         icon_registration.pretrained_models.lung_network_preprocess(image_exp, seg_exp)
     )
 
-    phi_AB, phi_BA, loss = icon_registration.itk_wrapper.register_pair(
+#    phi_AB, phi_BA, loss = icon_registration.itk_wrapper.register_pair(
+#        net,
+#        image_insp_preprocessed,
+#        image_exp_preprocessed,
+#        finetune_steps=(50 if args.finetune == True else None),
+#        return_artifacts=True,
+#    )
+    phi_BA, phi_AB, loss = icon_registration.itk_wrapper.register_pair(
         net,
-        image_insp_preprocessed,
         image_exp_preprocessed,
+        image_insp_preprocessed,
         finetune_steps=(50 if args.finetune == True else None),
         return_artifacts=True,
     )
