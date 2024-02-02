@@ -7,7 +7,7 @@ import numpy as np
 import torch
 import torchvision.utils
 import matplotlib.pyplot as plt
-import alias_free_unet
+import no_downsample_net
 import importlib
 import icon_registration.network_wrappers as network_wrappers
 from icon_registration.losses import ICONLoss, flips
@@ -39,10 +39,10 @@ def pad_im(im, n):
     return new_im
 
 class AttentionRegistration(icon_registration.RegistrationModule):
-    def __init__(self, net, dimension=2, feature_dimension=128):
+    def __init__(self, net, dimension=2):
         super().__init__()
         self.net = net
-        self.dim = feature_dimension
+        self.dim = 128
         self.dimension = dimension
         
         self.padding = 9
@@ -142,7 +142,7 @@ class AttentionRegistration(icon_registration.RegistrationModule):
         return output
 
 def make_network(input_shape, dimension):
-    unet = alias_free_unet.NoDownsampleNet(dimension = dimension)
+    unet = no_downsample_net.NoDownsampleNet(dimension = dimension)
     ar = AttentionRegistration(unet, dimension=dimension)
     inner_net = icon.network_wrappers.DownsampleRegistration(
       icon.network_wrappers.DownsampleRegistration(

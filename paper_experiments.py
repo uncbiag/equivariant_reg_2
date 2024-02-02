@@ -6,7 +6,7 @@ from icon_registration.mermaidlite import identity_map_multiN
 from icon_registration.losses import ICONLoss, flips
 import icon_registration.network_wrappers as network_wrappers
 import importlib
-import alias_free_unet
+import no_downsample_net
 import matplotlib.pyplot as plt
 import torchvision.utils
 import torch
@@ -70,7 +70,7 @@ experiments = {
 # We want landmarks in the retina dataset. Can do later, start with DICE. Can do later, start with LNCC.
 
 def make_hybrid_network(input_shape, dimension):
-    unet = alias_free_unet.NoDownsampleNet(dimension = dimension)
+    unet = no_downsample_net.NoDownsampleNet(dimension = dimension)
     ar = AttentionRegistration(unet, dimension=dimension)
     inner_net = icon.network_wrappers.DownsampleRegistration(
       icon.network_wrappers.DownsampleRegistration(
@@ -88,7 +88,7 @@ def make_hybrid_network(input_shape, dimension):
     return net
 
 def make_just_transformer_network(input_shape, dimension):
-    unet = alias_free_unet.NoDownsampleNet(dimension = dimension)
+    unet = no_downsample_net.NoDownsampleNet(dimension = dimension)
     ar = AttentionRegistration(unet, dimension=dimension)
     inner_net = icon.network_wrappers.DownsampleRegistration(
       icon.network_wrappers.DownsampleRegistration(

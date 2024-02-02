@@ -19,7 +19,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 import torch
 import torchvision.utils
-import alias_free_unet
 
 
 import icon_registration as icon
@@ -110,7 +109,7 @@ if __name__ == "__main__":
     threestep_consistent_net = equivariant_reg.make_network(input_shape, dimension=3)
 
     net_par = torch.nn.DataParallel(threestep_consistent_net).cuda()
-    optimizer = torch.optim.Adam(net_par.parameters(), lr=0.0001)
+    optimizer = torch.optim.Adam(net_par.parameters(), lr=0.0005)
 
     net_par.train()
 
@@ -130,5 +129,5 @@ if __name__ == "__main__":
         optimizer,
         dataloader.make_batch,
         unwrapped_net=threestep_consistent_net,
-        steps=50000,
+        steps=50001,
     )

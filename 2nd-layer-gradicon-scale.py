@@ -6,7 +6,7 @@ from icon_registration.mermaidlite import identity_map_multiN
 from icon_registration.losses import ICONLoss, flips
 import icon_registration.network_wrappers as network_wrappers
 import importlib
-import alias_free_unet
+import no_downsample_net
 import matplotlib.pyplot as plt
 import torchvision.utils
 import torch
