@@ -106,10 +106,10 @@ if __name__ == "__main__":
     import equivariant_reg
 
     footsteps.initialize()
-    threestep_consistent_net = equivariant_reg.make_network(input_shape, dimension=3)
+    threestep_consistent_net = equivariant_reg.make_network_final(input_shape, dimension=3, diffusion=True)
 
     net_par = torch.nn.DataParallel(threestep_consistent_net).cuda()
-    optimizer = torch.optim.Adam(net_par.parameters(), lr=0.0005)
+    optimizer = torch.optim.Adam(net_par.parameters(), lr=0.0001)
 
     net_par.train()
 
@@ -129,5 +129,25 @@ if __name__ == "__main__":
         optimizer,
         dataloader.make_batch,
         unwrapped_net=threestep_consistent_net,
-        steps=50001,
+        steps=500,
+    )
+
+    old_state = threestep_consistent_net.state_dict()
+    threestep_consistent_net = equivariant_reg.make_network_final(input_shape, dimension=3, diffusion=False)
+    net_par = torch.nn.DataParallel(threestep_consistent_net).cuda()
+    
+    net_par.load_state_dict(old_state)
+
+    
+
+
+    optimizer = torch.optim.Adam(net_par.parameters(), lr=0.0001)
+
+    net_par.train()
+    icon.train_batchfunction(
+        net_par,
+        optimizer,
+        dataloader.make_batch,
+        unwrapped_net=threestep_consistent_net,
+        steps=50000,
     )
