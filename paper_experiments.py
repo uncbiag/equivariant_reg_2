@@ -69,7 +69,7 @@ experiments = {
 
 # We want landmarks in the retina dataset. Can do later, start with DICE. Can do later, start with LNCC.
 
-def make_hybrid_network(input_shape, dimension):
+def make_hybrid_network(input_shape, dimension, diffusion=False):
     unet = no_downsample_net.NoDownsampleNet(dimension = dimension)
     ar = AttentionRegistration(unet, dimension=dimension)
     inner_net = icon.network_wrappers.DownsampleRegistration(
@@ -78,40 +78,47 @@ def make_hybrid_network(input_shape, dimension):
     ts = icon.TwoStepRegistration(
         icon.DownsampleRegistration(icon.FunctionFromVectorField(icon.networks.tallUNet2(dimension=dimension)), dimension=dimension),
         icon.FunctionFromVectorField(icon.networks.tallUNet2(dimension=dimension)))
-    ts = TwoStepLayerwiseRegularizer(
-        DiffusionLayerwiseRegularizer(inner_net, .02),
-        GradientICONLayerwiseRegularizer(ts, 1.5))
+    ts = icon.network_wrappers.TwoStepRegistration(inner_net, ts)
+
+    if diffusion:
+        net = icon.losses.DiffusionRegularizedNet(ts, icon.LNCC(4), 1.5)
+    else:
+        net = icon.losses.GradientICON(ts, icon.LNCC(4), 1.5)
         
-    net = CollectLayerwiseRegularizer(ts, icon.LNCC(sigma=4))
     net.assign_identity_map(input_shape)
     net.cuda()
     return net
 
-def make_just_transformer_network(input_shape, dimension):
+def make_just_transformer_network(input_shape, dimension, diffusion=False):
     unet = no_downsample_net.NoDownsampleNet(dimension = dimension)
     ar = AttentionRegistration(unet, dimension=dimension)
-    inner_net = icon.network_wrappers.DownsampleRegistration(
+    ts = icon.network_wrappers.DownsampleRegistration(
       icon.network_wrappers.DownsampleRegistration(
         icon.FunctionFromVectorField(ar), dimension), dimension)
-    ts = DiffusionLayerwiseRegularizer(inner_net, .02)
+
+    if diffusion:
+        net = icon.losses.DiffusionRegularizedNet(ts, icon.LNCC(4), 1.5)
+    else:
+        net = icon.losses.GradientICON(ts, icon.LNCC(4), 1.5)
         
-    net = CollectLayerwiseRegularizer(ts, icon.LNCC(sigma=4))
     net.assign_identity_map(input_shape)
     net.cuda()
     return net
 
-def make_just_displacement_network(input_shape, dimension):
+def make_just_displacement_network(input_shape, dimension, diffusion=False):
     inner_net = icon.network_wrappers.DownsampleRegistration(
       icon.network_wrappers.DownsampleRegistration(
         icon.FunctionFromVectorField(icon.networks.tallUNet2(dimension)), dimension), dimension)
     ts = icon.TwoStepRegistration(
         icon.DownsampleRegistration(icon.FunctionFromVectorField(icon.networks.tallUNet2(dimension=dimension)), dimension=dimension),
         icon.FunctionFromVectorField(icon.networks.tallUNet2(dimension=dimension)))
-    ts = TwoStepLayerwiseRegularizer(
-        DiffusionLayerwiseRegularizer(inner_net, .02),
-        GradientICONLayerwiseRegularizer(ts, 1.5))
+    ts = icon.network_wrappers.TwoStepRegistration(inner_net, ts)
+
+    if diffusion:
+        net = icon.losses.DiffusionRegularizedNet(ts, icon.LNCC(4), 1.5)
+    else:
+        net = icon.losses.GradientICON(ts, icon.LNCC(4), 1.5)
         
-    net = CollectLayerwiseRegularizer(ts, icon.LNCC(sigma=4))
     net.assign_identity_map(input_shape)
     net.cuda()
     return net
@@ -124,7 +131,7 @@ for experiment_name, datasets in experiments.items():
     for network_fn in [make_hybrid_network, make_just_transformer_network, make_just_displacement_network]:
 
 
-        net = network_fn(sample_batch.shape, 2)
+        net = network_fn(sample_batch.shape, 2, diffusion=True)
 
         net_name = network_fn.__name__
 
@@ -148,7 +155,17 @@ for experiment_name, datasets in experiments.items():
         net.train()
         net.to(device)
         optim = torch.optim.Adam(net.parameters(), lr=0.0003)
+        curves = icon.train_datasets(net, optim, ds1, ds2, epochs=1)
+
+        state_dict = net.state_dict()
+
+        net = network_fn(sample_batch.shape, 2, diffusion=False)
+        net.load_state_dict(state_dict)
+        net.train()
+        net.to(device)
+        optim = torch.optim.Adam(net.parameters(), lr=0.0003)
         curves = icon.train_datasets(net, optim, ds1, ds2, epochs=45)
+
 
         plt.plot(np.array(curves)[:, :3])
         footsteps.plot(title + "train curves")

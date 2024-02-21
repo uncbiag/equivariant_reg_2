@@ -134,12 +134,8 @@ if __name__ == "__main__":
 
     old_state = threestep_consistent_net.state_dict()
     threestep_consistent_net = equivariant_reg.make_network_final(input_shape, dimension=3, diffusion=False)
+    threestep_consistent_net.load_state_dict(old_state)
     net_par = torch.nn.DataParallel(threestep_consistent_net).cuda()
-    
-    net_par.load_state_dict(old_state)
-
-    
-
 
     optimizer = torch.optim.Adam(net_par.parameters(), lr=0.0001)
 

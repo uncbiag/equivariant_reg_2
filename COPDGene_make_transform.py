@@ -38,7 +38,7 @@ args = parser.parse_args()
 weights_path = args.weights_path
 
 import equivariant_reg
-net = equivariant_reg.make_network(input_shape, 3)
+net = equivariant_reg.make_network_final(input_shape, 3)
 
 
 import icon_registration.network_wrappers
@@ -55,7 +55,7 @@ overall_2 = []
 flips = []
 ICON_errors=[]
 
-for case in cases[:1]:
+for case in cases[:]:
     image_insp = itk.imread(f"{image_root}/{case}/{case}_INSP_STD_COPD_img.nii.gz")
     image_exp = itk.imread(f"{image_root}/{case}/{case}_EXP_STD_COPD_img.nii.gz")
     seg_insp = itk.imread(f"{image_root}/{case}/{case}_INSP_STD_COPD_label.nii.gz")

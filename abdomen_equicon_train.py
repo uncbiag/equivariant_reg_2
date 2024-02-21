@@ -43,22 +43,37 @@ if __name__ == "__main__":
     import equivariant_reg
 
     footsteps.initialize()
-    threestep_consistent_net = equivariant_reg.make_network(input_shape, dimension=3)
+    threestep_consistent_net = equivariant_reg.make_network_final(input_shape, dimension=3, diffusion=True)
 
     net_par = torch.nn.DataParallel(threestep_consistent_net).cuda()
     optimizer = torch.optim.Adam(net_par.parameters(), lr=0.0001)
 
     net_par.train()
 
-    BATCH_SIZE = 2
+    BATCH_SIZE = 1
     GPUS = 4
 
 
-    dataset = torch.load("/playpen-ssd/tgreer/abdomen_preprocessed_crop/train_imgs_tensor.trch")
+    dataset = torch.load("/playpen-raid2/Data/AbdomenCT-1K/HastingsProcessed/results/pad_fix_traintensor/train_imgs_tensor.trch")
     icon.train_batchfunction(
         net_par,
         optimizer,
         make_make_pair(dataset),
         unwrapped_net=threestep_consistent_net,
-        steps=50001,
+        steps=1500
+    )
+    old_state = threestep_consistent_net.state_dict()
+    threestep_consistent_net = equivariant_reg.make_network_final(input_shape, dimension=3, diffusion=False)
+    threestep_consistent_net.load_state_dict(old_state)
+    net_par = torch.nn.DataParallel(threestep_consistent_net).cuda()
+
+    optimizer = torch.optim.Adam(net_par.parameters(), lr=0.0001)
+
+    net_par.train()
+    icon.train_batchfunction(
+        net_par,
+        optimizer,
+        make_make_pair(dataset),
+        unwrapped_net=threestep_consistent_net,
+        steps=50000,
     )
