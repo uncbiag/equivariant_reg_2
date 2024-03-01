@@ -33,7 +33,7 @@ def preprocess(image):
 input_shape = [1, 1, 175, 175, 175]
 import equivariant_reg
 
-net = equivariant_reg.make_network([1, 1, 175, 175, 175], 3)
+net = equivariant_reg.make_network_final([1, 1, 175, 175, 175], 3)
 
 #multiscale_constr_model.multiscale_affine_model
 #
@@ -50,8 +50,8 @@ import glob
 
 def get_validation_images():
     res = []
-    for i in range(800,900):
-        name = f"/playpen-raid2/Data/AbdomenCT-1K/HastingsProcessed/results/processed_imgs/val/cropped_masks/Case_{i:05}_0000.nii.gz"
+    for i in range(800,888):
+        name = f"/playpen-raid2/Data/AbdomenCT-1K/HastingsProcessed/results/pad_color_fix-4/val/cropped_masks/Case_{i:05}_0000.nii.gz"
         try:
             itk.imread(name)
         except:
@@ -60,13 +60,16 @@ def get_validation_images():
     return res
 
 def get_image(n):
-    name = f"/playpen-raid2/Data/AbdomenCT-1K/HastingsProcessed/results/processed_imgs/val/cropped_imgs/Case_{n}_0000.nii.gz"
+    name = f"/playpen-raid2/Data/AbdomenCT-1K/HastingsProcessed/results/pad_color_fix-4/val/cropped_imgs/Case_{n}_0000.nii.gz"
+
+    import subprocess
+    #subprocess.run(["vshow", "-y", "-max", name])
     return itk.imread(name)
 
 
 
 def get_sub_seg(n):
-    name = f"/playpen-raid2/Data/AbdomenCT-1K/HastingsProcessed/results/processed_imgs/val/cropped_masks/Case_{n}_0000.nii.gz"
+    name = f"/playpen-raid2/Data/AbdomenCT-1K/HastingsProcessed/results/pad_color_fix-4/val/cropped_masks/Case_{n}_0000.nii.gz"
     mask = itk.imread(name)
     return mask
 

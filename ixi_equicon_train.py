@@ -42,24 +42,39 @@ def make_make_pair(dataset):
 if __name__ == "__main__":
     import equivariant_reg
 
+    dataset = torch.load("results/ixi_traintensor/train_imgs_tensor.trch")
+
     footsteps.initialize()
-    threestep_consistent_net = equivariant_reg.make_network(input_shape, dimension=3)
+    threestep_consistent_net = equivariant_reg.make_network_final(input_shape, dimension=3, diffusion=True)
 
     net_par = torch.nn.DataParallel(threestep_consistent_net).cuda()
     optimizer = torch.optim.Adam(net_par.parameters(), lr=0.0001)
 
     net_par.train()
 
-    BATCH_SIZE = 2
-    GPUS = 2
+    BATCH_SIZE = 1
+    GPUS = 4
 
 
-    dataset = torch.load("results/ixi_traintensor/train_imgs_tensor.trch")
-    print(torch.max(dataset[0]))
     icon.train_batchfunction(
         net_par,
         optimizer,
         make_make_pair(dataset),
         unwrapped_net=threestep_consistent_net,
-        steps=50001,
+        steps=1500
+    )
+    old_state = threestep_consistent_net.state_dict()
+    threestep_consistent_net = equivariant_reg.make_network_final(input_shape, dimension=3, diffusion=False)
+    threestep_consistent_net.load_state_dict(old_state)
+    net_par = torch.nn.DataParallel(threestep_consistent_net).cuda()
+
+    optimizer = torch.optim.Adam(net_par.parameters(), lr=0.0001)
+
+    net_par.train()
+    icon.train_batchfunction(
+        net_par,
+        optimizer,
+        make_make_pair(dataset),
+        unwrapped_net=threestep_consistent_net,
+        steps=50000,
     )
