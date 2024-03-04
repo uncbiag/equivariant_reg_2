@@ -27,16 +27,39 @@ input_shape = [1, 1, 175, 175, 175]
 
 
 
-def make_batch(dataset):
+def make_batch(dataset, pairs_made):
     image = torch.cat([random.choice(dataset) for _ in range(GPUS * BATCH_SIZE)])
     image = image.cuda()
     image = image / torch.max(image)
     print(torch.max(image), torch.min(image))
-    return image
+    return augment(image, pairs_made)
 
+def augment(image_A, pairs_made):
+
+    noise = torch.randn((image_A.shape[0], 3, 3))
+
+    noise = noise - torch.permute(noise, (0, 2, 1))
+
+    forward = torch.linalg.matrix_exp(noise * pairs_made / 10000)
+
+    full = torch.zeros((image_A.shape[0], 3, 4))
+
+    full[:, :3, :3] = forward
+
+    grid_shape = list(image_A.shape)
+    grid_shape[1] = 3
+    forward_grid = F.affine_grid(full.cuda(), grid_shape)
+    print(full)
+
+    warped_A = F.grid_sample(image_A, forward_grid, padding_mode="border")
+
+    return warped_A
 def make_make_pair(dataset):
+
+    pairs_made = [0]
     def make_pair():
-        return make_batch(dataset), make_batch(dataset)
+        pairs_made[0] += 1
+        return make_batch(dataset, pairs_made[0]), make_batch(dataset, pairs_made[0])
     return make_pair
 
 if __name__ == "__main__":
