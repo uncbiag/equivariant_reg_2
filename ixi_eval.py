@@ -20,6 +20,7 @@ args = parser.parse_args()
 
 weights_path = args.weights_path
 
+dices = []
 
 def preprocess(image):
     image = itk.CastImageFilter[type(image), itk.Image[itk.F, 3]].New()(image)
