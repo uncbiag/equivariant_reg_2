@@ -16,6 +16,11 @@ parser = argparse.ArgumentParser()
 parser.add_argument("weights_path" )
 parser.add_argument("--finetune", action="store_true")
 parser.add_argument("--writeimages", action="store_true")
+
+parser.add_argument("--slide", action="store_true")
+parser.add_argument("--transpose", action="store_true")
+
+
 args = parser.parse_args()
 
 weights_path = args.weights_path
@@ -104,6 +109,24 @@ for _ in range(30):
     n_A, n_B = (random.choice(atlas_registered) for _ in range(2))
     image_A, image_B = (preprocess(get_image(n)) for n in (n_A, n_B))
 
+
+    segmentation_A, segmentation_B = (get_sub_seg(n) for n in (n_A, n_B))
+
+    if args.slide:
+        image_A_buffer = itk.PyBuffer[type(image_A)].GetArrayViewFromImage(image_A)
+        image_A_buffer[:] = np.roll(image_A_buffer,60)
+
+        segmentation_A_buffer = itk.PyBuffer[type(segmentation_A)].GetArrayViewFromImage(segmentation_A)
+        segmentation_A_buffer[:] = np.roll(segmentation_A_buffer, 60)
+
+    if args.transpose:
+        image_A_buffer = itk.PyBuffer[type(image_A)].GetArrayViewFromImage(image_A)
+        image_A_buffer[:] = np.rot90(image_A_buffer, axes=(0, 1))
+
+        segmentation_A_buffer = itk.PyBuffer[type(segmentation_A)].GetArrayViewFromImage(segmentation_A)
+        segmentation_A_buffer[:] = np.rot90(segmentation_A_buffer, axes=(0, 1))
+
+
     # import pdb; pdb.set_trace()
     import time
     start = time.time()
@@ -118,7 +141,6 @@ for _ in range(30):
 
     print("time", end - start)
 
-    segmentation_A, segmentation_B = (get_sub_seg(n) for n in (n_A, n_B))
 
     interpolator = itk.NearestNeighborInterpolateImageFunction.New(segmentation_A)
 
