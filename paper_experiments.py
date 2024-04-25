@@ -52,7 +52,7 @@ dataset_kwargs = {
         }
 
 experiments = {
-        "baseline" : {"train":"not shifted", "test":"not shifted"},
+       # "baseline" : {"train":"not shifted", "test":"not shifted"},
         "tolerate_shift" : {"train":"shifted", "test":"shifted"},
         "generalize_shift" : {"train":"not shifted", "test":"shifted"},
         "hard_mode": {"train": "shifted_scaled", "test": "shifted_scaled"},
@@ -128,7 +128,7 @@ def make_just_displacement_network(input_shape, dimension, diffusion=False):
 loss_curves = {}
 for experiment_name, datasets in experiments.items():
 
-    for network_fn in [make_hybrid_network, make_just_transformer_network, make_just_displacement_network]:
+    for network_fn in [make_just_displacement_network, make_hybrid_network, make_just_transformer_network, ]:
 
 
         net = network_fn(sample_batch.shape, 2, diffusion=True)
@@ -164,7 +164,7 @@ for experiment_name, datasets in experiments.items():
         net.train()
         net.to(device)
         optim = torch.optim.Adam(net.parameters(), lr=0.0003)
-        curves = icon.train_datasets(net, optim, ds1, ds2, epochs=45)
+        curves = icon.train_datasets(net, optim, ds1, ds2, epochs=145)
 
 
         plt.plot(np.array(curves)[:, :3])

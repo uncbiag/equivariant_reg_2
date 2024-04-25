@@ -186,7 +186,7 @@ class GradientICONSparse(network_wrappers.RegistrationModule):
         self.phi_AB = self.regis_net(image_A, image_B)
         self.phi_BA = self.regis_net(image_B, image_A)
         
-        sparse_coords = torch.rand(image_A.shape[0], self.identity_map.shape[1], 5424, 1).cuda()
+        sparse_coords = torch.rand(image_A.shape[0], self.identity_map.shape[1], 2000, 1).cuda()
 
         phi_AB_vectorfield = self.phi_AB(sparse_coords)
         phi_BA_vectorfield = self.phi_BA(sparse_coords)
@@ -306,7 +306,7 @@ class DiffusionRegularizedSparse(network_wrappers.RegistrationModule):
         self.phi_AB = self.regis_net(image_A, image_B)
         self.phi_BA = self.regis_net(image_B, image_A)
         
-        sparse_coords = torch.rand(image_A.shape[0], self.identity_map.shape[1], 5424, 1).cuda()
+        sparse_coords = torch.rand(image_A.shape[0], self.identity_map.shape[1], 5000, 1).cuda()
 
         phi_AB_vectorfield = self.phi_AB(sparse_coords)
         phi_BA_vectorfield = self.phi_BA(sparse_coords)
@@ -405,9 +405,9 @@ class DiffusionRegularizedSparse(network_wrappers.RegistrationModule):
         self.warped_image_B = self.as_function(image_B)(self.phi_BA_vectorfield)
 
 def make_just_transformer_network(input_shape, dimension, diffusion=False):
-    ar = SparseAttentionRegistration(no_downsample_net.NoDownsampleNet())
+    ar = SparseAttentionRegistration(no_downsample_net.NoDownsampleNetBroad())
 
-    ts = icon.DownsampleRegistration(icon.DownsampleRegistration(ar, 2), 2)
+    ts = icon.DownsampleRegistration(ar, 2)
 
     if diffusion:
         net = DiffusionRegularizedSparse (ts, icon.NCC(), 1.5)
