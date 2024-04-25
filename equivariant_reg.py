@@ -178,3 +178,22 @@ def make_network_final(input_shape, dimension, diffusion=False):
     net.assign_identity_map(input_shape)
     net.cuda()
     return net
+def make_network_final_final(input_shape, dimension, diffusion=False):
+    unet = no_downsample_net.NoDownsampleNet(dimension = dimension)
+    ar = AttentionRegistration(unet, dimension=dimension)
+    ts = icon.FunctionFromVectorField(ar)
+    ts = icon.TwoStepRegistration(
+        icon.DownsampleRegistration(ts, dimension=dimension),
+        icon.FunctionFromVectorField(icon.networks.tallUNet2(dimension=dimension)))
+    ts = icon.TwoStepRegistration(
+        icon.DownsampleRegistration(ts, dimension=dimension),
+        icon.FunctionFromVectorField(icon.networks.tallUNet2(dimension=dimension)))
+
+    if diffusion:
+        net = icon.losses.DiffusionRegularizedNet(ts, icon.LNCC(4), 1.5)
+    else:
+        net = icon.losses.GradientICON(ts, icon.LNCC(4), 1.5)
+        
+    net.assign_identity_map(input_shape)
+    net.cuda()
+    return net
