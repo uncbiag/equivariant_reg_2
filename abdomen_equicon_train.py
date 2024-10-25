@@ -54,7 +54,7 @@ if __name__ == "__main__":
     GPUS = 4
 
 
-    dataset = torch.load("/playpen-raid2/Data/AbdomenCT-1K/HastingsProcessed/results/stretched_traintensor/train_imgs_tensor.trch")
+    dataset = torch.load("/work/users/t/g/tgreer/train_imgs_tensor.trch")
     icon.train_batchfunction(
         net_par,
         optimizer,
