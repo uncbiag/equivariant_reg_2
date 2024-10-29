@@ -56,7 +56,7 @@ if __name__ == "__main__":
 
     dataset = torch.load("/work/users/t/g/tgreer/train_imgs_tensor.trch")
 
-    old_state = torch.load("/users/t/g/tgreer/network_weights_48900")
+    old_state = torch.load("/users/t/g/tgreer/network_weights_49800")
     threestep_consistent_net = equivariant_reg.make_network_final_final(input_shape, dimension=3, diffusion=False)
     threestep_consistent_net.regis_net.load_state_dict(old_state)
     threestep_consistent_net.regis_net = icon.TwoStepRegistration(threestep_consistent_net.regis_net,
@@ -72,7 +72,7 @@ if __name__ == "__main__":
     icon.train_batchfunction(
         net_par,
         optimizer,
-        dataloader.make_batch,
+        make_make_pair(dataset),
         unwrapped_net=threestep_consistent_net,
         steps=50000,
     )
