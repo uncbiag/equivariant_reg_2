@@ -28,7 +28,6 @@ parser.add_argument("--exp", type=str, default="", help="Experiment name.")
 
 origin_shape = [1, 1, 256, 160, 192]
 input_shape = [1, 1, 175, 175, 175]
-clamp = [-1000, 1000]
 
 args = parser.parse_args()
 weights_path = args.weights_path
@@ -93,11 +92,11 @@ for (fixed_path, moving_path) in tqdm(test_cases):
     moving = np.asarray(itk.imread(os.path.join(args.data_folder, moving_path)))
 
     fixed = torch.Tensor(np.array(fixed)).unsqueeze(0).unsqueeze(0)
-    fixed = (torch.clamp(fixed, clamp[0], clamp[1]) - clamp[0])/(clamp[1]-clamp[0])
+    fixed = fixed / torch.max(fixed)
     fixed_in_net = F.interpolate(fixed, input_shape[2:], mode='trilinear', align_corners=False)
     
     moving = torch.Tensor(np.array(moving)).unsqueeze(0).unsqueeze(0)
-    moving = (torch.clamp(moving, clamp[0], clamp[1]) - clamp[0])/(clamp[1]-clamp[0])
+    moving = moving / torch.max(moving)
     moving_in_net = F.interpolate(moving, input_shape[2:], mode='trilinear', align_corners=False)
 
     # if args.io_steps > 0:

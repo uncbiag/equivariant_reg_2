@@ -16,29 +16,28 @@ parser = argparse.ArgumentParser()
 parser.add_argument("weights_path" )
 parser.add_argument("--finetune", action="store_true")
 parser.add_argument("--writeimages", action="store_true")
+parser.add_argument("--network_name", default="multiscale_model")
+parser.add_argument("--slide", action="store_true")
+parser.add_argument("--transpose", action="store_true")
 args = parser.parse_args()
 
 weights_path = args.weights_path
 
 
 def preprocess(image):
-    image = itk.CastImageFilter[type(image), itk.Image[itk.F, 3]].New()(image)
-    print(type(image))
+    # image = itk.CastImageFilter[itk.Image[itk.SS, 3], itk.Image[itk.F, 3]].New()(image)
     max_ = np.max(np.array(image))
-    image = itk.shift_scale_image_filter(image, shift=0.0, scale=1.0 / max_)
+    image = itk.shift_scale_image_filter(image, shift=0.0, scale=0.9 / max_)
     # image = itk.clamp_image_filter(image, bounds=(0, 1))
     return image
 
 
-input_shape = [1, 1, 175, 175, 175]
+input_shape = [1, 1, 130, 155, 130]
+
+
 import equivariant_reg
 
-net = equivariant_reg.make_network_final_final([1, 1, 175, 175, 175], 3)
-
-#multiscale_constr_model.multiscale_affine_model
-#
-#qq = torch.nn.Module()
-#qq.module = net
+net = equivariant_reg.make_network_final(input_shape, 3)
 utils.log(net.regis_net.load_state_dict(torch.load(weights_path), strict=True))
 net.eval()
 
@@ -48,39 +47,27 @@ ICON_errors=[]
 
 import glob
 
-def get_validation_images():
-    res = []
-    for i in range(800,888):
-        name = f"/playpen-raid2/Data/AbdomenCT-1K/HastingsProcessed/results/pad_color_fix-4/val/stretched_masks/Case_{i:05}_0000.nii.gz"
-        try:
-            itk.imread(name)
-        except:
-            continue
-        res.append(f"{i:05}")
-    return res
-
-def get_image(n):
-    name = f"/playpen-raid2/Data/AbdomenCT-1K/HastingsProcessed/results/pad_color_fix-4/val/stretched_imgs/Case_{n}_0000.nii.gz"
-
-    import subprocess
-    #subprocess.run(["vshow", "-y", "-max", name])
-    return itk.imread(name)
-
-
-
-def get_sub_seg(n):
-    name = f"/playpen-raid2/Data/AbdomenCT-1K/HastingsProcessed/results/pad_color_fix-4/val/stretched_masks/Case_{n}_0000.nii.gz"
-    mask = itk.imread(name)
-    return mask
-
-atlas_registered = get_validation_images()
-
-
+from HCP_segs import atlas_registered, get_brain_image, get_sub_seg
 
 random.seed(1)
-for _ in range(30):
+for _ in range(100):
     n_A, n_B = (random.choice(atlas_registered) for _ in range(2))
-    image_A, image_B = (preprocess(get_image(n)) for n in (n_A, n_B))
+    image_A, image_B = (preprocess(get_brain_image(n)) for n in (n_A, n_B))
+    segmentation_A, segmentation_B = (get_sub_seg(n) for n in (n_A, n_B))
+
+    if args.slide:
+        image_A_buffer = itk.PyBuffer[type(image_A)].GetArrayViewFromImage(image_A)
+        image_A_buffer[:] = np.roll(image_A_buffer,15)
+
+        segmentation_A_buffer = itk.PyBuffer[type(segmentation_A)].GetArrayViewFromImage(segmentation_A)
+        segmentation_A_buffer[:] = np.roll(segmentation_A_buffer, 15)
+
+    if args.transpose:
+        image_A_buffer = itk.PyBuffer[type(image_A)].GetArrayViewFromImage(image_A)
+        image_A_buffer[:] = np.rot90(image_A_buffer, axes=(0, 1))
+
+        segmentation_A_buffer = itk.PyBuffer[type(segmentation_A)].GetArrayViewFromImage(segmentation_A)
+        segmentation_A_buffer[:] = np.rot90(segmentation_A_buffer, axes=(0, 1))
 
     # import pdb; pdb.set_trace()
     import time
@@ -96,7 +83,6 @@ for _ in range(30):
 
     print("time", end - start)
 
-    segmentation_A, segmentation_B = (get_sub_seg(n) for n in (n_A, n_B))
 
     interpolator = itk.NearestNeighborInterpolateImageFunction.New(segmentation_A)
 

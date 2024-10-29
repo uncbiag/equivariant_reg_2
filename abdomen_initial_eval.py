@@ -84,14 +84,10 @@ for _ in range(30):
 
     
     
-    reg_res_initial = ants.registration(segmentation_A, segmentation_B, "Affine", outprefix=footsteps.output_dir + "fo1r")
-    reg_res = ants.registration(image_A, image_B, "SyN", outprefix=footsteps.output_dir + "for", )#initial_transform = reg_res_initial['fwdtransforms'])
-    warped_segmentation_B = ants.apply_transforms(fixed=segmentation_A, moving=segmentation_B, transformlist=reg_res['fwdtransforms'], interpolator="nearestNeighbor")
-
 
     end = time.time()
 
-    mean_dice = mean_dice_f(segmentation_A, warped_segmentation_B)
+    mean_dice = mean_dice_f(segmentation_A, segmentation_B)
 
     print("time", end - start)
 
