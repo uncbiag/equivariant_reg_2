@@ -34,6 +34,9 @@ input_shape = [1, 1, 175, 175, 175]
 import equivariant_reg
 
 net = equivariant_reg.make_network_final_final([1, 1, 175, 175, 175], 3)
+net.regis_net = icon.TwoStepRegistration(net.regis_net,
+        icon.FunctionFromVectorField(icon.networks.tallUNet2(dimension=3)))
+net.assign_identity_map(input_shape)
 
 #multiscale_constr_model.multiscale_affine_model
 #

@@ -38,7 +38,15 @@ args = parser.parse_args()
 weights_path = args.weights_path
 
 import equivariant_reg
-net = equivariant_reg.make_network_final(input_shape, 3)
+#net = equivariant_reg.make_network_final(input_shape, 3)
+
+
+threestep_consistent_net = equivariant_reg.make_network_final(input_shape, dimension=3, diffusion=False)
+threestep_consistent_net.regis_net = icon.TwoStepRegistration(threestep_consistent_net.regis_net,
+        icon.FunctionFromVectorField(icon.networks.tallUNet2(dimension=3)))
+
+threestep_consistent_net.assign_identity_map(input_shape)
+net = threestep_consistent_net
 
 
 import icon_registration.network_wrappers

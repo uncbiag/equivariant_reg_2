@@ -158,6 +158,26 @@ def make_network(input_shape, dimension):
     net.assign_identity_map(input_shape)
     net.cuda()
     return net
+def make_network_final_smolatt(input_shape, dimension, diffusion=False):
+    unet = no_downsample_net.NoDownsampleNet(dimension = dimension)
+    ar = AttentionRegistration(unet, dimension=dimension)
+    inner_net = icon.network_wrappers.DownsampleRegistration(
+      icon.network_wrappers.DownsampleRegistration(
+      icon.network_wrappers.DownsampleRegistration(
+        icon.FunctionFromVectorField(ar), dimension), dimension), dimension)
+    ts = icon.TwoStepRegistration(
+        icon.DownsampleRegistration(icon.FunctionFromVectorField(icon.networks.tallUNet2(dimension=dimension)), dimension=dimension),
+        icon.FunctionFromVectorField(icon.networks.tallUNet2(dimension=dimension)))
+    ts = icon.network_wrappers.TwoStepRegistration(inner_net, ts)
+
+    if diffusion:
+        net = icon.losses.DiffusionRegularizedNet(ts, icon.LNCC(4), 15)
+    else:
+        net = icon.losses.GradientICONSparse(ts, icon.LNCC(4), 1.5)
+        
+    net.assign_identity_map(input_shape)
+    net.cuda()
+    return net
 
 def make_network_final(input_shape, dimension, diffusion=False):
     unet = no_downsample_net.NoDownsampleNet(dimension = dimension)

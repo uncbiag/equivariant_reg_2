@@ -38,6 +38,9 @@ input_shape = [1, 1, 130, 155, 130]
 import equivariant_reg
 
 net = equivariant_reg.make_network_final(input_shape, 3)
+net.regis_net = icon.TwoStepRegistration(net.regis_net,
+        icon.FunctionFromVectorField(icon.networks.tallUNet2(dimension=3)))
+net.assign_identity_map(input_shape)
 utils.log(net.regis_net.load_state_dict(torch.load(weights_path), strict=True))
 net.eval()
 
