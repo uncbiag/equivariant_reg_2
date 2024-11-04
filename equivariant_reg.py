@@ -1,4 +1,5 @@
 import icon_registration
+import rotation_aug_utils
 import icon_registration as icon
 import icon_registration.data
 import icon_registration.networks as networks
@@ -172,6 +173,26 @@ def make_network_final_smolatt(input_shape, dimension, diffusion=False):
 
     if diffusion:
         net = icon.losses.DiffusionRegularizedNet(ts, icon.LNCC(4), 15)
+    else:
+        net = icon.losses.GradientICONSparse(ts, icon.LNCC(4), 1.5)
+        
+    net.assign_identity_map(input_shape)
+    net.cuda()
+    return net
+
+def make_network_final_rotation(input_shape, dimension, diffusion=False):
+    unet = rotation_aug_utils.Equivariantize(no_downsample_net.NoDownsampleNetBroad(dimension = dimension))
+    ar = AttentionRegistration(unet, dimension=dimension)
+    inner_net = icon.network_wrappers.DownsampleRegistration(
+      icon.network_wrappers.DownsampleRegistration(
+        rotation_aug_utils.FunctionFromVectorFieldRotated(ar), dimension), dimension)
+    ts = icon.TwoStepRegistration(
+        icon.DownsampleRegistration(icon.FunctionFromVectorField(icon.networks.tallUNet2(dimension=dimension)), dimension=dimension),
+        icon.FunctionFromVectorField(icon.networks.tallUNet2(dimension=dimension)))
+    ts = icon.network_wrappers.TwoStepRegistration(inner_net, ts)
+
+    if diffusion:
+        net = icon.losses.DiffusionRegularizedNet(ts, icon.LNCC(4), 1.5)
     else:
         net = icon.losses.GradientICONSparse(ts, icon.LNCC(4), 1.5)
         

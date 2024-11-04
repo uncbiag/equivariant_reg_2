@@ -109,3 +109,30 @@ class PostStep(icon.RegistrationModule):
             self.as_function(image_B)(invphi(self.identity_map)),
         )
         return lambda tensor_of_coordinates: psi(phi(tensor_of_coordinates))
+
+class Equivariantize(torch.nn.Module):
+    def __init__(self, net):
+        super().__init__()
+        self.net = net
+    def forward(self, a):
+        i = self.net(a)
+        i = i + self.net(a.flip(dims=(2, 3))).flip(dims=(2, 3))
+        i = i + self.net(a.flip(dims=(3, 4))).flip(dims=(4, 4))
+        i = i + self.net(a.flip(dims=(2, 4))).flip(dims=(2, 4))
+        return i / 4
+
+class RotationFunctionFromVectorField(icon.registrationModule):
+
+    def __init__(self, net):
+        super().__init__()
+        self.net = net
+    def forward(self, a, b):
+        displacements = self.net(a, b)
+        field = self.as_function(displacements)
+
+        def transform(coords):
+            coords_reflected = coords - 2 * coords * (coords < 0) - 2 * (coords - 1) * (coords > 1)
+            if hasattr(coords, "isIdentity") and coords.shape == displacements.shape:
+                return coords + displacemnts
+            return coords + 2 * field(coords) - field(coords_reflected)
+        return transform
