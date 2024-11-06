@@ -117,11 +117,11 @@ class Equivariantize(torch.nn.Module):
     def forward(self, a):
         i = self.net(a)
         i = i + self.net(a.flip(dims=(2, 3))).flip(dims=(2, 3))
-        i = i + self.net(a.flip(dims=(3, 4))).flip(dims=(4, 4))
+        i = i + self.net(a.flip(dims=(3, 4))).flip(dims=(3, 4))
         i = i + self.net(a.flip(dims=(2, 4))).flip(dims=(2, 4))
         return i / 4
 
-class RotationFunctionFromVectorField(icon.registrationModule):
+class RotationFunctionFromVectorField(icon.RegistrationModule):
 
     def __init__(self, net):
         super().__init__()

@@ -185,14 +185,14 @@ def make_network_final_rotation(input_shape, dimension, diffusion=False):
     ar = AttentionRegistration(unet, dimension=dimension)
     inner_net = icon.network_wrappers.DownsampleRegistration(
       icon.network_wrappers.DownsampleRegistration(
-        rotation_aug_utils.FunctionFromVectorFieldRotated(ar), dimension), dimension)
+        rotation_aug_utils.RotationFunctionFromVectorField(ar), dimension), dimension)
     ts = icon.TwoStepRegistration(
         icon.DownsampleRegistration(icon.FunctionFromVectorField(icon.networks.tallUNet2(dimension=dimension)), dimension=dimension),
         icon.FunctionFromVectorField(icon.networks.tallUNet2(dimension=dimension)))
     ts = icon.network_wrappers.TwoStepRegistration(inner_net, ts)
 
     if diffusion:
-        net = icon.losses.DiffusionRegularizedNet(ts, icon.LNCC(4), 1.5)
+        net = icon.losses.DiffusionRegularizedNet(inner_net, icon.LNCC(4), 10.5)
     else:
         net = icon.losses.GradientICONSparse(ts, icon.LNCC(4), 1.5)
         

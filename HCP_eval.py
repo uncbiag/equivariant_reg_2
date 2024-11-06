@@ -1,4 +1,5 @@
 import argparse
+import rotation_aug_utils
 import os
 import random
 
@@ -31,18 +32,41 @@ def preprocess(image):
     # image = itk.clamp_image_filter(image, bounds=(0, 1))
     return image
 
+def augmentify(network):
+    augmenter = rotation_aug_utils.FunctionsFromMatrix(rotation_aug_utils.RandomMatrix())
+    augmenter2 = icon.FunctionFromMatrix(rotation_aug_utils.RandomMatrix())
+
+
+    augmenter = icon.TwoStepRegistration(
+        augmenter2,
+        rotation_aug_utils.PostStep(
+          augmenter, 
+          network.regis_net
+        )
+    )
+
+    network.regis_net = augmenter
+    network.assign_identity_map(input_shape)
+    return network
 
 input_shape = [1, 1, 130, 155, 130]
 
 
 import equivariant_reg
-
-net = equivariant_reg.make_network_final(input_shape, 3)
-net.regis_net = icon.TwoStepRegistration(net.regis_net,
-        icon.FunctionFromVectorField(icon.networks.tallUNet2(dimension=3)))
-net.assign_identity_map(input_shape)
-utils.log(net.regis_net.load_state_dict(torch.load(weights_path), strict=True))
-net.eval()
+net = None
+if args.network_name == "multiscale_model":
+    net = equivariant_reg.make_network_final(input_shape, 3)
+    net.regis_net = icon.TwoStepRegistration(net.regis_net,
+            icon.FunctionFromVectorField(icon.networks.tallUNet2(dimension=3)))
+    net.assign_identity_map(input_shape)
+    utils.log(net.regis_net.load_state_dict(torch.load(weights_path), strict=True))
+    net.eval()
+if args.network_name == "rotated":
+    net = equivariant_reg.make_network_final_rotation(input_shape, 3)
+    net = augmentify(net)
+    net.assign_identity_map(input_shape)
+    utils.log(net.regis_net.load_state_dict(torch.load(weights_path), strict=True))
+    net.eval()
 
 dices = []
 flips = []
