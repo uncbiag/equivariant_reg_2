@@ -157,7 +157,7 @@ for (fixed_path, moving_path) in tqdm(test_cases[:]):
     raw_fixed = itk.imread(os.path.join(args.data_folder, fixed_path))
     raw_moving = itk.imread(os.path.join(args.data_folder, moving_path))
 
-    phi_AB, phi_BA = icon.itk_wrapper.register_pair(net, preprocess(raw_moving), preprocess(raw_fixed), finetune_steps=50)
+    phi_AB, phi_BA = icon.itk_wrapper.register_pair(net, preprocess(raw_moving), preprocess(raw_fixed), finetune_steps=None)
 
     dispfield_filter = itk.TransformToDisplacementFieldFilter[itk.Image[itk.Vector[itk.F, 3], 3], itk.D].New()
 

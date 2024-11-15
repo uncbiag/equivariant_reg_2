@@ -11,6 +11,8 @@ import itk
 import numpy as np
 import torch
 
+import scipy.ndimage
+
 import utils
 
 parser = argparse.ArgumentParser()
@@ -19,7 +21,9 @@ parser.add_argument("--finetune", action="store_true")
 parser.add_argument("--writeimages", action="store_true")
 parser.add_argument("--network_name", default="multiscale_model")
 parser.add_argument("--slide", action="store_true")
+parser.add_argument("--slide_amt")
 parser.add_argument("--transpose", action="store_true")
+parser.add_argument("--rot45", action="store_true")
 args = parser.parse_args()
 
 weights_path = args.weights_path
@@ -57,7 +61,7 @@ net = None
 if args.network_name == "multiscale_model":
     net = equivariant_reg.make_network_final(input_shape, 3)
     net.regis_net = icon.TwoStepRegistration(net.regis_net,
-            icon.FunctionFromVectorField(icon.networks.tallUNet2(dimension=3)))
+            icon.network_wrappers.FunctionFromVectorField(icon.networks.tallUNet2(dimension=3)))
     net.assign_identity_map(input_shape)
     utils.log(net.regis_net.load_state_dict(torch.load(weights_path), strict=True))
     net.eval()
@@ -66,6 +70,15 @@ if args.network_name == "rotated":
     net = augmentify(net)
     net.assign_identity_map(input_shape)
     utils.log(net.regis_net.load_state_dict(torch.load(weights_path), strict=True))
+    net.eval()
+if args.network_name == "rotated_unrotate":
+    net = equivariant_reg.make_network_final_rotation(input_shape, 3)
+    net.regis_net = icon.TwoStepRegistration(net.regis_net, icon.FunctionFromVectorField(icon.networks.tallUNet2(dimension=3)))
+    net = augmentify(net)
+    net.assign_identity_map(input_shape)
+    utils.log(net.regis_net.load_state_dict(torch.load(weights_path), strict=True))
+    net.regis_net = net.regis_net.netPsi.netPsi
+    net.assign_identity_map(input_shape)
     net.eval()
 
 dices = []
@@ -83,18 +96,26 @@ for _ in range(100):
     segmentation_A, segmentation_B = (get_sub_seg(n) for n in (n_A, n_B))
 
     if args.slide:
+        slide_amt = int(args.slide_amt)
         image_A_buffer = itk.PyBuffer[type(image_A)].GetArrayViewFromImage(image_A)
-        image_A_buffer[:] = np.roll(image_A_buffer,15)
+        image_A_buffer[:] = np.roll(image_A_buffer,slide_amt)
 
         segmentation_A_buffer = itk.PyBuffer[type(segmentation_A)].GetArrayViewFromImage(segmentation_A)
-        segmentation_A_buffer[:] = np.roll(segmentation_A_buffer, 15)
+        segmentation_A_buffer[:] = np.roll(segmentation_A_buffer, slide_amt)
 
     if args.transpose:
         image_A_buffer = itk.PyBuffer[type(image_A)].GetArrayViewFromImage(image_A)
-        image_A_buffer[:] = np.rot90(image_A_buffer, axes=(0, 1))
+        image_A_buffer[:] = np.rot90(image_A_buffer, axes=(0, 2))
 
         segmentation_A_buffer = itk.PyBuffer[type(segmentation_A)].GetArrayViewFromImage(segmentation_A)
-        segmentation_A_buffer[:] = np.rot90(segmentation_A_buffer, axes=(0, 1))
+        segmentation_A_buffer[:] = np.rot90(segmentation_A_buffer, axes=(0, 2))
+
+    if args.rot45:
+        image_A_buffer = itk.PyBuffer[type(image_A)].GetArrayViewFromImage(image_A)
+        image_A_buffer[:] = scipy.ndimage.rotate(image_A_buffer, angle=45, order=0, reshape=False, axes=(0, 2))
+
+        segmentation_A_buffer = itk.PyBuffer[type(segmentation_A)].GetArrayViewFromImage(segmentation_A)
+        segmentation_A_buffer[:] = scipy.ndimage.rotate(segmentation_A_buffer, angle=45, order=0, reshape=False, axes=(0, 2))
 
     # import pdb; pdb.set_trace()
     import time
