@@ -1,3 +1,11 @@
+*.pdf
+*.png
+.ipynb_checkpoints/
+brain_train_2sdown_scaled
+venv/
+HCP_EasyReg/
+abdomen_voxelmorph/
+keymorph_comparison/
 *.ipynb
 activate
 constricon_dir

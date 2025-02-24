@@ -11,7 +11,7 @@ import torch
 import torchvision.utils
 import matplotlib.pyplot as plt
 import fixed_point_carl as fpc
-from fpc import show
+from fixed_point_carl import show
 
 
 ds, _ = icon_registration.data.get_dataset_mnist(split="train", number=2)
@@ -27,7 +27,7 @@ ts = ar
 #ts = icon.network_wrappers.DownsampleNet(carl.RotationFunctionFromVectorField(networks.tallUNet2(dimension=2)), 2)
 for _ in range(3):
      ts = icon.TwoStepRegistration(
-	 Blur(ts, 8),
+	 fpc.Blur(ts, 12),
 	 #ts,
 	 icon.network_wrappers.DownsampleNet(carl.RotationFunctionFromVectorField(networks.tallUNet2(dimension=2)), 2)
      )
@@ -35,7 +35,7 @@ for _ in range(3):
 
 for _ in range(3):
      ts = icon.TwoStepRegistration(
-	 Blur(ts, 12),
+	 fpc.Blur(ts, 8),
 	 #ts,
 	 carl.RotationFunctionFromVectorField(networks.tallUNet2(dimension=2))
      )
@@ -43,6 +43,9 @@ net = icon.losses.GradientICONSparse(ts, icon.LNCC(sigma=4), lmbda=3)
 net.assign_identity_map(sample_batch.shape)
 net = carl.augmentify(net)
 net.cuda()
+net.train()
+optim = torch.optim.Adam(net.parameters(), lr=0.0005)
+
 
 curves = icon.train_datasets(net, optim, ds, ds, epochs=10)
 plt.close()
