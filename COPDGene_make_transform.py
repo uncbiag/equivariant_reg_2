@@ -130,7 +130,9 @@ for case in cases[:]:
     utils.log("ICON_error", icon_error)
 
     itk.imwrite(image_insp, footsteps.output_dir + "moving_image.nrrd")
+    itk.imwrite(image_insp_preprocessed, footsteps.output_dir + "preprocessed_moving.nrrd")
     itk.imwrite(image_exp, footsteps.output_dir + "fixed.nrrd")
+    itk.imwrite(image_exp_preprocessed, footsteps.output_dir + "preprocessed_fixed.nrrd")
     itk.transformwrite([phi_AB], footsteps.output_dir + "transform.hdf5")
 
 utils.log("mean ICON error", np.mean(ICON_errors))
