@@ -1,15 +1,15 @@
 import icon_registration as icon
+import icon_registration.carl as carl
 import icon_registration.data
 import icon_registration.networks as networks
 from icon_registration.config import device
-import icon_registration.carl as carl
-
 
 import numpy as np
-import torch
-import torchvision.utils
 import matplotlib.pyplot as plt
 
+import torch.nn.functional as F
+import torch
+import torchvision.utils
 import torch.nn as nn
 
 def show(tensor):
@@ -23,15 +23,17 @@ class SomeDownsampleNet(nn.Module):
         if dimension == 2:
             self.BatchNorm = nn.BatchNorm2d
             self.Conv = nn.Conv2d
+            self.avg_pool = F.avg_pool2d
         else:
             self.BatchNorm = nn.BatchNorm3d
             self.Conv = nn.Conv3d
+            self.avg_pool = F.avg_pool3d
         DIM = output_dim
         self.convs = nn.ModuleList([])
         self.batchnorms = nn.ModuleList([self.BatchNorm(DIM) for _ in range(3)])
-        self.convs0 = (self.Conv(1, DIM, 2, stride=2))
+        self.convs0 = (self.Conv(1, DIM // 4, 2))
 
-        self.convs.append(self.Conv(DIM, DIM, 2, stride=2))
+        self.convs.append(self.Conv(DIM // 4, DIM, 2))
         for i in range(3):
             self.convs.append(self.Conv(DIM, DIM, 3, padding="same"))
         for i in range(3):
@@ -39,12 +41,14 @@ class SomeDownsampleNet(nn.Module):
         for i in range(3):
             self.convs.append(self.Conv(DIM, DIM, 3, padding="same", dilation=4))
 
-        
-
     def forward(self, x):
+        
         x = self.convs0(x)
+        x = self.avg_pool(x, 2, ceil_mode=True)
 
         x = self.convs[0](x)
+        x = self.avg_pool(x, 2, ceil_mode=True)
+
         x = torch.relu(x)
 
         for i in range(3):
@@ -214,10 +218,11 @@ class AttentionFeaturizer(icon_registration.RegistrationModule):
         ft_A = self.featurize(A, recrop=False)
         ft_B = self.featurize(B)
 
-        ft_A_cross = self.cross1(ft_A, ft_B)
-        ft_B_cross = self.cross2(ft_B, ft_A)
-
         return self.registerer(ft_A, ft_B)
+
+        #ft_A_cross = self.cross1(ft_A, ft_B)
+        #ft_B_cross = self.cross2(ft_B, ft_A)
+
 
         #return self.registerer(ft_A_cross, ft_B_cross)
     
@@ -231,6 +236,7 @@ class AttentionRegistration(icon_registration.RegistrationModule):
         self.padding = padding
 
     def torch_attention(self, ft_A, ft_B):
+
 
         if self.dimension == 3:
             ft_A = ft_A.reshape(
@@ -308,8 +314,6 @@ class AttentionRegistration(icon_registration.RegistrationModule):
 
 output_saved = [None]
 
-import icon_registration.carl as carl
-import torch.nn.functional as F
 
 
 def even_pad(img, amt):
@@ -341,6 +345,7 @@ def even_blur(tensor, sigma):
 
 
     return out
+
 class Blur(icon.network_wrappers.RegistrationModule):
     def __init__(self, net, radius):
         super().__init__()
@@ -366,5 +371,4 @@ class Equivariantize(torch.nn.Module):
     def forward(self, a):
         i = self.net(a)
         i = i + self.net(a.flip(dims=(2,3))).flip(dims=(2,3))
-        #i = i + self.net(a.flip(dims=(3,))).flip(dims=(3,))
         return i / 2

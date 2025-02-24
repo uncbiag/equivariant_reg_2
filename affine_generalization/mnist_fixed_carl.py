@@ -15,6 +15,8 @@ from fixed_point_carl import show
 
 
 ds, _ = icon_registration.data.get_dataset_mnist(split="train", number=2)
+#ds, _ = icon_registration.data.get_dataset_retina()
+
 
 sample_batch = next(iter(ds))[0]
 plt.imshow(torchvision.utils.make_grid(sample_batch[:12], nrow=4)[0])
@@ -59,8 +61,6 @@ footsteps.plot("curves")
 image_A = next(iter(ds))[0].to(device)
 image_B = next(iter(ds))[0].to(device)
 net(image_A, image_B)
-
-
 plt.subplot(2, 2, 1)
 show(image_A)
 plt.subplot(2, 2, 2)
