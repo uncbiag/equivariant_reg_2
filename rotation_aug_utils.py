@@ -136,3 +136,20 @@ class RotationFunctionFromVectorField(icon.RegistrationModule):
                 return coords + displacemnts
             return coords + 2 * field(coords) - field(coords_reflected)
         return transform
+
+def augmentify(network):
+    augmenter = rotation_aug_utils.FunctionsFromMatrix(rotation_aug_utils.RandomMatrix())
+    augmenter2 = icon.FunctionFromMatrix(rotation_aug_utils.RandomMatrix())
+
+
+    augmenter = icon.TwoStepRegistration(
+        augmenter2,
+        rotation_aug_utils.PostStep(
+          augmenter, 
+          network.regis_net
+        )
+    )
+
+    network.regis_net = augmenter
+    network.assign_identity_map(input_shape)
+    return network
