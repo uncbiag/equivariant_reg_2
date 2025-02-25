@@ -359,7 +359,7 @@ class Blur(icon.network_wrappers.RegistrationModule):
         def transform(coords):
             coords_reflected = coords - 2 * coords * (coords < 0) - 2 * (coords - 1) * (coords > 1)
             if hasattr(coords, "isIdentity") and coords.shape == phi.shape:
-                return coords + displacemnts
+                return coords + phi
             return coords + 2 * field(coords) - field(coords_reflected)
         return transform
 
