@@ -1,0 +1,46 @@
+import dataset
+import torch
+import footsteps
+import matplotlib.pyplot as plt
+
+input_shape = (1, 1, 160, 160, 160)
+
+maximum_images = 6
+
+cache_filename = None
+
+datasets_ = []
+
+datasets_.append(dataset.PairedDataset(input_shape, "bratsreg", "/playpen-raid2/Data/BraTS-Reg/BraTSReg_Training_Data_v3/*/*.nii.gz", maximum_images=maximum_images, cache_filename=cache_filename, match_regex=r"v3/(BraTSReg_[0-9]+)/"))
+datasets_.append(dataset.PairedDataset(input_shape, "pancreas", "/playpen-raid1/tgreer/pancreatic_cancer_registration/data/*/Processed/*/original_image.nii.gz", maximum_images=maximum_images, cache_filename=cache_filename, match_regex=r"data/([0-9]+)/Processed/"))
+datasets_.append(dataset.PairedDataset(input_shape, "dirlab_clamped", "/playpen-raid2/Data/Lung_Registration_clamp_normal_transposed/*/*_img.nii.gz", maximum_images=maximum_images, cache_filename=cache_filename, match_regex=r'transposed/([a-zA-Z0-9]+)/'))
+datasets_.append(dataset.PairedDataset(input_shape, "dirlab", "/playpen-raid2/Data/Lung_Registration_transposed/*/*_img.nii.gz", maximum_images=maximum_images, cache_filename=cache_filename, match_regex=r'transposed/([a-zA-Z0-9]+)/'))
+
+datasets_.append(dataset.Dataset(input_shape, "abdomen1k", "/playpen-raid2/Data/AbdomenCT-1K/AbdomenCT-1K-ImagePart*/Case_*", maximum_images=maximum_images, cache_filename=cache_filename))
+datasets_.append(dataset.Dataset(input_shape, "HCP_t1_stripped", "/playpen-raid2/Data/HCP/HCP_1200/*/T1w/T1w_acpc_dc_restore_brain.nii.gz", maximum_images=maximum_images, cache_filename=cache_filename))
+datasets_.append(dataset.Dataset(input_shape, "HCP_t1", "/playpen-raid2/Data/HCP/HCP_1200/*/T1w/T1w_acpc_dc_restore.nii.gz", maximum_images=maximum_images, cache_filename=cache_filename))
+datasets_.append(dataset.Dataset(input_shape, "HCP_t2_stripped", "/playpen-raid2/Data/HCP/HCP_1200/*/T1w/T2w_acpc_dc_restore_brain.nii.gz", maximum_images=maximum_images, cache_filename=cache_filename))
+datasets_.append(dataset.Dataset(input_shape, "HCP_t2", "/playpen-raid2/Data/HCP/HCP_1200/*/T1w/T2w_acpc_dc_restore.nii.gz", maximum_images=maximum_images, cache_filename=cache_filename))
+datasets_.append(dataset.Dataset(input_shape, "OAI", "/playpen-raid/zhenlinx/Data/OAI_segmentation/Nifti_rescaled_LEFT/*_image.nii.gz", maximum_images=maximum_images, cache_filename=cache_filename))
+datasets_.append(dataset.Dataset(input_shape, "fmost", "/playpen-raid2/Data/fMost/subject/*_red_mm_RSA.nii.gz", maximum_images=maximum_images, cache_filename=cache_filename))
+###datasets_.append(dataset.Dataset(input_shape, "heart", "/playpen-raid/bdemir/uniICON/ACDC/database/training/*/patient003_frame15.nii.gz", maximum_images=maximum_images, cache_filename=cache_filename))
+###datasets_.append(dataset.Dataset(input_shape, "ixi", "/playpen-raid2/Data/IXI/IXI_data/Train/*", maximum_images=maximum_images, cache_filename=cache_filename))
+datasets_.append(dataset.Dataset(input_shape, "oasis", "/playpen-raid2/Data/oasis/OASIS_OAS1_*_MR1/orig.nii.gz", maximum_images=maximum_images, cache_filename=cache_filename))
+datasets_.append(dataset.Dataset(input_shape, "lumir", "/playpen-raid1/Data/LUMIR/imagesTr/*", maximum_images=maximum_images, cache_filename=cache_filename))
+
+
+datasets_.append(dataset.PairedDICOMDataset(input_shape, "DukeLivers", "/playpen-raid1/Data/DukeLivers/Segmentation/Segmentation/*/*/images/", maximum_images=maximum_images, match_regex=r"Segmentation/([0-9]+)/"))
+datasets_.append(dataset.Dataset(input_shape, "translucence", "/playpen-raid1/tgreer/mouse_brain_translucence/data/auto_files_resampled/*", cache_filename=cache_filename, maximum_images=maximum_images))
+
+
+for d in datasets_:
+    for i in range(1):
+        pair = d.get_pair()
+        plt.imshow(torch.cat(pair, dim=2)[0, 0, :, :, 50].cpu())
+        footsteps.plot(d.name)
+        plt.imshow(torch.max(torch.cat(pair, dim=2), dim=4).values[0, 0].cpu())
+        footsteps.plot(d.name)
+        plt.imshow(torch.cat(pair, dim=2)[0, 0, :, 50].cpu())
+        footsteps.plot(d.name)
+        plt.imshow(torch.cat(pair, dim=4)[0, 0, 50].cpu())
+        footsteps.plot(d.name)
