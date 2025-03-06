@@ -64,7 +64,10 @@ class Dataset:
                 torch.quantile(image.view(-1), 0.99)
                 )
         image = torch.clip(image, im_min, im_max)
-        return image.type(original_type)
+        image = image - im_min
+        image = image / (im_max - im_min)
+        image = image * 255.
+        return image.to(torch.uint8)
 
 
 
@@ -80,7 +83,7 @@ class Dataset:
         d before putting them into the store.
         """
         unprepped_image = self.store[key]
-        unprepped_image = unprepped_image.cuda().float()
+        unprepped_image = unprepped_image.float()
         unprepped_image = unprepped_image - torch.min(unprepped_image)
         unprepped_image = unprepped_image.float() / torch.max(unprepped_image)
         return unprepped_image # not really unprepped anymore
@@ -110,16 +113,20 @@ class PairedDataset(Dataset):
             pair_key = regex.search(match_regex, key).group(1)
             self.pair_keys[key] = pair_key
             self.pair_lookup[pair_key].append(key)
-        for pair_key in self.pair_lookup.keys():
-            assert len(self.pair_lookup[pair_key]) != 1 , f"{self.pair_lookup[pair_key]}"
+        #for pair_key in self.pair_lookup.keys():
+        #    assert len(self.pair_lookup[pair_key]) != 1 , f"{self.pair_lookup[pair_key]}"
 
 
 
     def get_key_pair(self):
         image_key_1 = random.choice(self.keys)
         image_key_2 = image_key_1
+        count = 0
         while image_key_2 == image_key_1:
             image_key_2 = random.choice(self.pair_lookup[self.pair_keys[image_key_1]])
+            count += 1
+            if count > 8:
+                return self.get_key_pair()
         return (image_key_1, image_key_2)
 
 class PairedDICOMDataset(PairedDataset):

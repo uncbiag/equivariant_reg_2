@@ -5,9 +5,12 @@ import matplotlib.pyplot as plt
 
 input_shape = (1, 1, 160, 160, 160)
 
-maximum_images = 6
 
-cache_filename = None
+cache_filename = "results/8bit_dataset/"
+maximum_images=1000
+
+#cache_filename = "results/dp_r"
+#maximum_images = 4
 
 datasets_ = []
 
@@ -29,18 +32,19 @@ datasets_.append(dataset.Dataset(input_shape, "oasis", "/playpen-raid2/Data/oasi
 datasets_.append(dataset.Dataset(input_shape, "lumir", "/playpen-raid1/Data/LUMIR/imagesTr/*", maximum_images=maximum_images, cache_filename=cache_filename))
 
 
-datasets_.append(dataset.PairedDICOMDataset(input_shape, "DukeLivers", "/playpen-raid1/Data/DukeLivers/Segmentation/Segmentation/*/*/images/", maximum_images=maximum_images, match_regex=r"Segmentation/([0-9]+)/"))
+datasets_.append(dataset.PairedDICOMDataset(input_shape, "DukeLivers", "/playpen-raid1/Data/DukeLivers/Segmentation/Segmentation/*/*/images/", maximum_images=maximum_images, match_regex=r"Segmentation/([0-9]+)/", cache_filename=cache_filename))
 datasets_.append(dataset.Dataset(input_shape, "translucence", "/playpen-raid1/tgreer/mouse_brain_translucence/data/auto_files_resampled/*", cache_filename=cache_filename, maximum_images=maximum_images))
 
 
-for d in datasets_:
-    for i in range(1):
-        pair = d.get_pair()
-        plt.imshow(torch.cat(pair, dim=2)[0, 0, :, :, 50].cpu())
-        footsteps.plot(d.name)
-        plt.imshow(torch.max(torch.cat(pair, dim=2), dim=4).values[0, 0].cpu())
-        footsteps.plot(d.name)
-        plt.imshow(torch.cat(pair, dim=2)[0, 0, :, 50].cpu())
-        footsteps.plot(d.name)
-        plt.imshow(torch.cat(pair, dim=4)[0, 0, 50].cpu())
-        footsteps.plot(d.name)
+if __name__ == "__main__":
+    for d in datasets_:
+        for i in range(1):
+            pair = d.get_pair()
+            plt.imshow(torch.cat(pair, dim=2)[0, 0, :, :, 50].cpu())
+            footsteps.plot(d.name)
+            plt.imshow(torch.max(torch.cat(pair, dim=2), dim=4).values[0, 0].cpu())
+            footsteps.plot(d.name)
+            plt.imshow(torch.cat(pair, dim=2)[0, 0, :, 50].cpu())
+            footsteps.plot(d.name)
+            plt.imshow(torch.cat(pair, dim=4)[0, 0, 50].cpu())
+            footsteps.plot(d.name)
