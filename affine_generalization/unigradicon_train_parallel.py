@@ -57,7 +57,6 @@ def make_net(dimension, input_shape):
     net.train()
     return net
 
-import datasets
 
 def make_make_pair():
 
@@ -185,6 +184,7 @@ def train_batchfunction(
 
 
 if __name__ == "__main__":
+    import datasets
 
 
     net = make_net(3, input_shape)
