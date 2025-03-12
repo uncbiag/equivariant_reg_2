@@ -94,7 +94,7 @@ if __name__ == "__main__":
 
 
     dataset = torch.load(
-        "/playpen-raid1/tgreer/equivariant_reg_2/dataset_cache/brain_train_2sdown_scaled"
+        "/users/t/g/tgreer/brain_train_2sdown_scaled"
     )
     footsteps.initialize()
     threestep_consistent_net = equivariant_reg.make_network_final_rotation(input_shape, dimension=3, diffusion=True)
@@ -123,10 +123,16 @@ if __name__ == "__main__":
     threestep_consistent_net = equivariant_reg.make_network_final_rotation(input_shape, dimension=3, diffusion=False)
     threestep_consistent_net = augmentify(threestep_consistent_net)
     #threestep_consistent_net.load_state_dict(old_state)
-    threestep_consistent_net.regis_net.load_state_dict(torch.load("results/hcp_rotated-5/network_weights_2400"))
+    #threestep_consistent_net.regis_net.load_state_dict(torch.load("/users/t/g/tgreer/equivariant_reg_2/results/HCP training run rotated-2/network_weights_35700"))
+
+    threestep_consistent_net.regis_net.netPsi.netPsi = icon.TwoStepRegistration(threestep_consistent_net.regis_net.netPsi.netPsi, icon.network_wrappers.FunctionFromVectorField(icon.networks.tallUNet2(dimension=3)))
+    threestep_consistent_net.assign_identity_map(input_shape)
+    threestep_consistent_net.regis_net.load_state_dict(torch.load("/users/t/g/tgreer/equivariant_reg_2/results/HCP training run rotated-5/network_weights_11400"))
     net_par = torch.nn.DataParallel(threestep_consistent_net).cuda()
 
-    optimizer = torch.optim.Adam(net_par.parameters(), lr=0.0001)
+    optimizer = torch.optim.Adam(net_par.parameters(), lr=0.00001)
+
+    #optimizer.load_state_dict(torch.load("/users/t/g/tgreer/equivariant_reg_2/results/HCP training run rotated-5/optimizer_weights_11400"))
 
     net_par.train()
     icon.train_batchfunction(
