@@ -7,12 +7,15 @@ input_shape = (1, 1, 160, 160, 160)
 
 
 cache_filename = "results/8bit_dataset/"
+#cache_filename=None
 maximum_images=1000
 
 #cache_filename = "results/dp_r"
 #maximum_images = 4
 
 datasets_ = []
+datasets_.append(dataset.Dataset(input_shape, "abdomen8k", "/data/hastings/Abdomen8k/AbdomenAtlas/*/ct.nii.gz", maximum_images=maximum_images, cache_filename="results/-4/"))
+datasets_.append(dataset.Dataset(input_shape, "TotalSegmentatorMRI", "/playpen-raid1/soumitri/data/TotalSegMRI/*/*/mri.nii.gz", maximum_images=maximum_images, cache_filename="results/-4/"))
 
 datasets_.append(dataset.PairedDataset(input_shape, "bratsreg", "/playpen-raid2/Data/BraTS-Reg/BraTSReg_Training_Data_v3/*/*.nii.gz", maximum_images=maximum_images, cache_filename=cache_filename, match_regex=r"v3/(BraTSReg_[0-9]+)/"))
 datasets_.append(dataset.PairedDataset(input_shape, "pancreas", "/playpen-raid1/tgreer/pancreatic_cancer_registration/data/*/Processed/*/original_image.nii.gz", maximum_images=maximum_images, cache_filename=cache_filename, match_regex=r"data/([0-9]+)/Processed/"))
