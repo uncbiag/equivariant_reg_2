@@ -49,7 +49,7 @@ def make_net(dimension, input_shape):
              #ts,
              carl.RotationFunctionFromVectorField(networks.tallUNet2(dimension=dimension))
          )
-    net = icon.losses.GradientICONSparse(ts, icon.LNCC(sigma=4), lmbda=1.5)
+    net = icon.losses.GradientICONSparse(ts, icon.losses.SquaredLNCC(sigma=4), lmbda=1.5)
     #net = icon.losses.DiffusionRegularizedNet(ts, icon.losses.SquaredLNCC(sigma=4), lmbda=10)
     net.assign_identity_map(input_shape)
     net = carl.augmentify(net)
@@ -188,11 +188,13 @@ if __name__ == "__main__":
 
 
     net = make_net(3, input_shape)
-    net.regis_net.load_state_dict(torch.load("results/unic-1/network_weights_20000"))
+    #net.regis_net.load_state_dict(torch.load("results/unic-1/network_weights_20000"))
+    #net.regis_net.load_state_dict(torch.load("results/gradicon_less_augment/network_weights_280000"))
+    net.regis_net.load_state_dict(torch.load("results/pure_bigger_convs/network_weights_100000"))
 
 
 
-    BATCH_SIZE = 4
+    BATCH_SIZE = 3
 
     train_batchfunction(
         net,

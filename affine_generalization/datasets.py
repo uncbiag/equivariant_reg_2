@@ -37,6 +37,15 @@ datasets_.append(dataset.Dataset(input_shape, "lumir", "/playpen-raid1/Data/LUMI
 
 datasets_.append(dataset.PairedDICOMDataset(input_shape, "DukeLivers", "/playpen-raid1/Data/DukeLivers/Segmentation/Segmentation/*/*/images/", maximum_images=maximum_images, match_regex=r"Segmentation/([0-9]+)/", cache_filename=cache_filename))
 datasets_.append(dataset.Dataset(input_shape, "translucence", "/playpen-raid1/tgreer/mouse_brain_translucence/data/auto_files_resampled/*", cache_filename=cache_filename, maximum_images=maximum_images))
+maximum_images=20000
+cache_filename="results/CPTAC-12/"
+datasets_.append(dataset.PairedDataset(input_shape, "autoPET", "/playpen1/tgreer/PET/FDG-PET-CT-Lesions/*/*/[PC][TE][Tr]*.nii.gz", match_regex=r"(/PETCT_[0-9a-z]+/)", maximum_images=maximum_images, cache_filename=cache_filename))
+datasets_.append(dataset.PairedDICOMDataset(input_shape, "CPTAC-UCEC", "/playpen-raid1/Data/TCIA_CPTAC-UCEC/manifest-1712342731330/CPTAC-UCEC/*/*/*/", match_regex=r"/(C3[NL]-[0-9]*)/", maximum_images=maximum_images, cache_filename=cache_filename) )
+maximum_images=1000
+
+cache_filename="results/mrct_custom-8"
+datasets_.append(dataset.PairedDICOMDataset(input_shape, "TCIA-hastings", "/playpen-raid1/Data/TCIA_Hastings_custom_mrct/manifest-1743108366953/*/*/*/*/", match_regex=r"66953/[a-zA-Z\-]*/([A-Z0-9\-]+)/", maximum_images=maximum_images, cache_filename=cache_filename))
+
 
 
 if __name__ == "__main__":

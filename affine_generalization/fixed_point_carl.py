@@ -16,9 +16,13 @@ def show(tensor):
     plt.imshow(torchvision.utils.make_grid(tensor[:6], nrow=3)[0].cpu().detach())
     plt.xticks([])
     plt.yticks([])
+    
+MODEL_DIM=384
+#MODEL_DIM=128
+
 
 class SomeDownsampleNoDilationNet(nn.Module):
-    def __init__(self, dimension=2, output_dim=128):
+    def __init__(self, dimension=2, output_dim=MODEL_DIM):
         super().__init__()
         if dimension == 2:
             self.BatchNorm = nn.BatchNorm2d
@@ -277,7 +281,7 @@ class AttentionFeaturizer(icon_registration.RegistrationModule):
 class AttentionRegistration(icon_registration.RegistrationModule):
     def __init__(self, dimension=2, padding=8):
         super().__init__()
-        self.dim = 128
+        self.dim = MODEL_DIM
         self.dimension = dimension
 
         self.padding = padding

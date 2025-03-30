@@ -1,4 +1,5 @@
 import torch
+import numpy as np
 import re as regex
 import collections
 import tqdm
@@ -19,7 +20,11 @@ class Dataset:
             if maximum_images:
                 paths = paths[:maximum_images]
             for path in tqdm.tqdm(paths):
-                self.store[path] = self.preprocess_itk_image(path)
+                try:
+                    self.store[path] = self.preprocess_itk_image(path)
+                except Exception as e:
+                    print(e)
+                    
             torch.save(
                     {
                         "name": self.name,
@@ -35,8 +40,9 @@ class Dataset:
             assert(self.image_glob == loaded_cache["image_glob"])
             paths = self.get_image_paths()
             self.store = loaded_cache["store"]
-            assert(paths[0] in self.store) # sanity check
+            #assert(paths[0] in self.store) # sanity check
         self.keys = list(self.store.keys())
+
                 
 
     def get_image_paths(self) -> [str]:
@@ -110,6 +116,7 @@ class PairedDataset(Dataset):
         self.pair_keys = {}
 
         for key in self.store.keys():
+            print(match_regex, key)
             pair_key = regex.search(match_regex, key).group(1)
             self.pair_keys[key] = pair_key
             self.pair_lookup[pair_key].append(key)
@@ -144,24 +151,28 @@ class PairedDICOMDataset(PairedDataset):
       import SimpleITK as sitk
       import os
       print(os.listdir(path))
-      # Get all DICOM files in the directory
-      dicom_files = [os.path.join(path, f) for f in os.listdir(path) 
-                 if os.path.isfile(os.path.join(path, f)) and f.endswith('.dicom')]
+
+      series_ids = sitk.ImageSeriesReader.GetGDCMSeriesIDs(path)
       
-      # Sort the files to ensure correct slice order
-      dicom_files.sort()
+      dicom_files = sitk.ImageSeriesReader.GetGDCMSeriesFileNames(path, series_ids[0])
+
       
-      if not dicom_files:
-         raise ValueError(f"No DICOM files found in directory: {path}")
       
       # Read the DICOM series as a 3D image
       reader = sitk.ImageSeriesReader()
       reader.SetFileNames(dicom_files)
       image = reader.Execute()
+
+      #if ("ITK_non_uniform_sampling_deviation" in image.GetMetaDataKeys()):
+      #    raise ValueError("image has non-uniform-spacing: likely a mish-mash")
+
       
       # Convert to tensor
       image_array = sitk.GetArrayFromImage(image)
       image_tensor = torch.tensor(image_array)
+
+      if np.any(np.array(image_array.shape) < 20):
+          raise ValueError("image too low resolution")
       
       return image_tensor
 

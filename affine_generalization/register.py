@@ -13,11 +13,20 @@ import unigradicon_train_parallel
 def get_model():
     net = unigradicon_train_parallel.make_net(3, unigradicon_train_parallel.input_shape)
     #net.regis_net.load_state_dict(torch.load("results/a-17/network_weights_40000"))
-    net.regis_net.load_state_dict(torch.load("results/gradicon_4gpu/network_weights_95000"))
-    #net = icon_registration.losses.DiffusionRegularizedNet(net.regis_net, net.similarity, 1.5)
-    #net.assign_identity_map(net.regis_net.input_shape)
+    #net.regis_net.load_state_dict(torch.load("results/gradicon_less_augment/network_weights_280000"))
+    #net.regis_net.load_state_dict(torch.load("results/hacky_fixed_augment/network_weights_120000"))
+    #net.regis_net.load_state_dict(torch.load("results/pure_bigger_convs/network_weights_100000"))
+    net.regis_net.load_state_dict(torch.load("results/mrct_finally/network_weights_30000"))
+    #net.regis_net.load_state_dict(torch.load("results/add_8k_mrsegmentator/network_weights_145000"))
+    #net = icon_registration.losses.DiffusionRegularizedNet(icon_registration.FunctionFromVectorField(icon_registration.networks.tallUNet2(dimension=3)), icon_registration.LNCC(3),  1.5)
+    #net = icon_registration.losses.DiffusionRegularizedNet(net.regis_net, icon_registration.LNCC(3),  5.5)
+    #net = icon_registration.losses.GradientICONSparse(net.regis_net, icon_registration.losses.SquaredLNCC(3),  6.5)
+    #net.assign_identity_map([1, 1, 160, 160, 160])
+    #net = icon_registration.carl.augmentify(net)
+    #net.assign_identity_map([1, 1, 160, 160, 160])
     net.cuda()
     net.regis_net = net.regis_net.netPsi.netPsi
+
 
     net.eval()
     return net
@@ -79,8 +88,14 @@ def quantile(arr: torch.Tensor, q):
     return torch.kthvalue(arr, int(q * l)).values
 
 def preprocess(image):
+    print("preprocess_havoc")
+    print(itk.GetArrayFromImage(image).shape)
     image = itk_crop_foreground(image, additional_crop_pixels=3)
+    itk.imwrite(image, "yeeter.nrrd")
+    print("cropped", itk.GetArrayFromImage(image).shape)
     image = itk.CastImageFilter[type(image), itk.Image[itk.F, 3]].New()(image)
+    itk.imwrite(image, "skeeter.nrrd")
+    print("casted", itk.GetArrayFromImage(image).shape)
     min_ = quantile(torch.tensor(np.array(image)), .01).item()
     max_ = quantile(torch.tensor(np.array(image)), .99).item()
     image = itk.clamp_image_filter(image, Bounds=(min_, max_))
