@@ -16,12 +16,14 @@ def get_model():
     #net.regis_net.load_state_dict(torch.load("results/gradicon_less_augment/network_weights_280000"))
     #net.regis_net.load_state_dict(torch.load("results/hacky_fixed_augment/network_weights_120000"))
     #net.regis_net.load_state_dict(torch.load("results/pure_bigger_convs/network_weights_100000"))
-    net.regis_net.load_state_dict(torch.load("results/mrct_finally/network_weights_30000"))
+    #net.regis_net.load_state_dict(torch.load("results/mrct_finally/network_weights_60000"))
+    net.regis_net.load_state_dict(torch.load("/playpen-raid1/tgreer/equivariant_reg_2/affine_generalization/results/unigradicon_ctny_longdiffusion/network_weights_110000"))
+
     #net.regis_net.load_state_dict(torch.load("results/add_8k_mrsegmentator/network_weights_145000"))
-    #net = icon_registration.losses.DiffusionRegularizedNet(icon_registration.FunctionFromVectorField(icon_registration.networks.tallUNet2(dimension=3)), icon_registration.LNCC(3),  1.5)
-    #net = icon_registration.losses.DiffusionRegularizedNet(net.regis_net, icon_registration.LNCC(3),  5.5)
-    #net = icon_registration.losses.GradientICONSparse(net.regis_net, icon_registration.losses.SquaredLNCC(3),  6.5)
-    #net.assign_identity_map([1, 1, 160, 160, 160])
+    #net = icon_registration.losses.DiffusionRegularizedNet(icon_registration.FunctionFromVectorField(icon_registration.networks.tallUNet2(dimension=3)), icon_registration.losses.SquaredLNCC(3),  1.5)
+    #net = icon_registration.losses.BendingEnergyNet(net.regis_net, icon_registration.losses.SquaredLNCC(3),.15)
+    net = icon_registration.losses.GradientICONSparse(net.regis_net, icon_registration.losses.SquaredLNCC(3),  1.5)
+    net.assign_identity_map([1, 1, 160, 160, 160])
     #net = icon_registration.carl.augmentify(net)
     #net.assign_identity_map([1, 1, 160, 160, 160])
     net.cuda()
@@ -87,14 +89,23 @@ def quantile(arr: torch.Tensor, q):
     l = len(arr)
     return torch.kthvalue(arr, int(q * l)).values
 
+def reorient(moving):
+        from itk.ITKCommonBasePython import itkSpatialOrientationAdapter
+
+        return itk.orient_image_filter(
+                            moving, 
+                                    desired_coordinate_orientation=itk.ITKCommonBasePython.itkSpatialOrientationEnums.ValidCoordinateOrientations_ITK_COORDINATE_ORIENTATION_RAS,
+                                            use_image_direction=True)
+
 def preprocess(image):
-    print("preprocess_havoc")
+    image = reorient(image)
+
+
+
     print(itk.GetArrayFromImage(image).shape)
-    image = itk_crop_foreground(image, additional_crop_pixels=3)
-    itk.imwrite(image, "yeeter.nrrd")
+    image = itk_crop_foreground(image, additional_crop_pixels=12)
     print("cropped", itk.GetArrayFromImage(image).shape)
     image = itk.CastImageFilter[type(image), itk.Image[itk.F, 3]].New()(image)
-    itk.imwrite(image, "skeeter.nrrd")
     print("casted", itk.GetArrayFromImage(image).shape)
     min_ = quantile(torch.tensor(np.array(image)), .01).item()
     max_ = quantile(torch.tensor(np.array(image)), .99).item()
@@ -110,8 +121,8 @@ if __name__ == "__main__":
                          help="The path of the fixed image.")
     parser.add_argument("--moving", required=True, type=str,
                          help="The path of the fixed image.")
-    parser.add_argument("--transform_out", required=True,
-                         type=str, help="The path to save the transform.")
+    parser.add_argument("--transform_out", required=False,
+                         default="trans.hdf5", type=str, help="The path to save the transform.")
     parser.add_argument("--warped_moving_out", required=False,
                         default=None, type=str, help="The path to save the warped image.")
     parser.add_argument("--io_iterations", required=False,

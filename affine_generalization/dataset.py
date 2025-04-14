@@ -6,6 +6,14 @@ import tqdm
 import random
 import glob
 import footsteps
+import itk
+def reorient(moving):
+        from itk.ITKCommonBasePython import itkSpatialOrientationAdapter
+
+        return itk.orient_image_filter(
+                            moving, 
+                                    desired_coordinate_orientation=itk.ITKCommonBasePython.itkSpatialOrientationEnums.ValidCoordinateOrientations_ITK_COORDINATE_ORIENTATION_RAS,
+                                            use_image_direction=True)
 
 class Dataset:
     def __init__(self, input_shape, name: str, image_glob: str, cache_filename = None, maximum_images=None):
@@ -49,8 +57,10 @@ class Dataset:
         return list(glob.glob(self.image_glob))
     
     def read_image(self, path:str):
-        import SimpleITK
-        image = SimpleITK.GetArrayFromImage(SimpleITK.ReadImage(path))
+        #import SimpleITK
+        #image = SimpleITK.GetArrayFromImage(SimpleITK.ReadImage(path))
+        image = reorient(itk.imread(path))
+        image = itk.GetArrayFromImage(image)
         image = torch.tensor(image)
         return image
 
@@ -116,7 +126,6 @@ class PairedDataset(Dataset):
         self.pair_keys = {}
 
         for key in self.store.keys():
-            print(match_regex, key)
             pair_key = regex.search(match_regex, key).group(1)
             self.pair_keys[key] = pair_key
             self.pair_lookup[pair_key].append(key)
@@ -148,27 +157,45 @@ class PairedDICOMDataset(PairedDataset):
       Returns:
          torch.Tensor: 3D tensor containing the DICOM volume
       """
-      import SimpleITK as sitk
+      #import SimpleITK as sitk
       import os
-      print(os.listdir(path))
 
-      series_ids = sitk.ImageSeriesReader.GetGDCMSeriesIDs(path)
+      namesGenerator = itk.GDCMSeriesFileNames.New()
+      namesGenerator.SetUseSeriesDetails(True)
+      namesGenerator.SetDirectory(path)
+      seriesUID = namesGenerator.GetSeriesUIDs()
+
+
+
+
       
-      dicom_files = sitk.ImageSeriesReader.GetGDCMSeriesFileNames(path, series_ids[0])
+      dicom_files = namesGenerator.GetFileNames(seriesUID[0])
+
 
       
       
       # Read the DICOM series as a 3D image
-      reader = sitk.ImageSeriesReader()
+      reader = itk.ImageSeriesReader[itk.Image[itk.SS, 3]].New()
+      dicomIO = itk.GDCMImageIO.New()
+      reader.SetImageIO(dicomIO)
       reader.SetFileNames(dicom_files)
-      image = reader.Execute()
+      reader.Update()
+      image = reader.GetOutput()
+      image = reorient(image)
+      
 
-      #if ("ITK_non_uniform_sampling_deviation" in image.GetMetaDataKeys()):
-      #    raise ValueError("image has non-uniform-spacing: likely a mish-mash")
+      if ("ITK_non_uniform_sampling_deviation" in image.GetMetaDataDictionary().GetKeys()):
+          spacing_deviation = image.GetMetaDataDictionary().Get("ITK_non_uniform_sampling_deviation")
+          spacing_deviation = itk.MetaDataObject[itk.D].cast(spacing_deviation).GetMetaDataObjectValue()
+
+          if spacing_deviation > 5:
+              raise ValueError("image has non-uniform-spacing: likely a mish-mash")
+      
 
       
       # Convert to tensor
-      image_array = sitk.GetArrayFromImage(image)
+      image_array = itk.GetArrayFromImage(image)
+
       image_tensor = torch.tensor(image_array)
 
       if np.any(np.array(image_array.shape) < 20):

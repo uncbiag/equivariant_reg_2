@@ -24,3 +24,13 @@ def itk_mean_dice(im1, im2):
     dices = [ d for d in dices if not np.isnan(d)]
     log("DICE_breakdown:", dices)
     return np.mean(dices)
+class Logger:
+    def __init__(self, file):
+        self.file = open(file, "w")
+    
+    def log(self, *val):
+        print(*val)
+        print(*val, file=self.file)
+    
+    def close(self):
+        self.file.close()
