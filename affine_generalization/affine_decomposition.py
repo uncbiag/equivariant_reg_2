@@ -4,8 +4,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import icon_registration.itk_wrapper
 
-moving = itk.imread("register_py/AbdomenMRCT_0004_0000.nii.gz")
-fixed = itk.imread("register_py/AbdomenMRCT_0004_0001.nii.gz")
+moving = itk.imread("register_py/AbdomenMRCT_0005_0000.nii.gz")
+fixed = itk.imread("register_py/AbdomenMRCT_0005_0001.nii.gz")
 
 phi_AB = itk.transformread("trans.hdf5")[0]
 
@@ -27,13 +27,10 @@ def decompose_icon_itk_transform(phi_AB:itk.CompositeTransform):
 
     error =  (y - x @ best_affine_fit)
 
-
-
     Offset = best_affine_fit[3]
 
     Matrix = best_affine_fit[:3].transpose() + np.eye(3)
 
-    print(Matrix.shape, error.shape)
 
     error = error @ np.linalg.inv(Matrix.transpose())
     error = error.reshape(160, 160, 160, 3)
@@ -50,7 +47,7 @@ def decompose_icon_itk_transform(phi_AB:itk.CompositeTransform):
     affine_decomposed_transform = itk.CompositeTransform[itk.D, 3].New()
 
     affine_decomposed_transform.PrependTransform(phi_AB.GetNthTransform(2))
-    #affine_decomposed_transform.PrependTransform(residual_displacement_transform)
+    affine_decomposed_transform.PrependTransform(residual_displacement_transform)
     affine_decomposed_transform.PrependTransform(affine_component_of_network_transform)
     affine_decomposed_transform.PrependTransform(phi_AB.GetNthTransform(0))
     return affine_decomposed_transform

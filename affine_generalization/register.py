@@ -11,18 +11,19 @@ import unigradicon_train_parallel
 
 
 def get_model():
-    net = unigradicon_train_parallel.make_net(3, unigradicon_train_parallel.input_shape)
+    net = unigradicon_train_parallel.make_net(3, unigradicon_train_parallel.input_shape, equivariantize=False)
     #net.regis_net.load_state_dict(torch.load("results/a-17/network_weights_40000"))
     #net.regis_net.load_state_dict(torch.load("results/gradicon_less_augment/network_weights_280000"))
     #net.regis_net.load_state_dict(torch.load("results/hacky_fixed_augment/network_weights_120000"))
     #net.regis_net.load_state_dict(torch.load("results/pure_bigger_convs/network_weights_100000"))
     #net.regis_net.load_state_dict(torch.load("results/mrct_finally/network_weights_60000"))
-    net.regis_net.load_state_dict(torch.load("/playpen-raid1/tgreer/equivariant_reg_2/affine_generalization/results/unigradicon_ctny_longdiffusion/network_weights_110000"))
+    #net.regis_net.load_state_dict(torch.load("/playpen-raid1/tgreer/equivariant_reg_2/affine_generalization/results/unigradicon_ctny_longdiffusion/network_weights_205000"))
+    net.regis_net.load_state_dict(torch.load("/playpen-raid1/tgreer/equivariant_reg_2/affine_generalization/results/parallel no-_rotation/network_weights_230000"))
 
     #net.regis_net.load_state_dict(torch.load("results/add_8k_mrsegmentator/network_weights_145000"))
     #net = icon_registration.losses.DiffusionRegularizedNet(icon_registration.FunctionFromVectorField(icon_registration.networks.tallUNet2(dimension=3)), icon_registration.losses.SquaredLNCC(3),  1.5)
     #net = icon_registration.losses.BendingEnergyNet(net.regis_net, icon_registration.losses.SquaredLNCC(3),.15)
-    net = icon_registration.losses.GradientICONSparse(net.regis_net, icon_registration.losses.SquaredLNCC(3),  1.5)
+    #net = icon_registration.losses.GradientICONSparse(net.regis_net, icon_registration.losses.LNCCOnlyInterpolated(3),  1.5)
     net.assign_identity_map([1, 1, 160, 160, 160])
     #net = icon_registration.carl.augmentify(net)
     #net.assign_identity_map([1, 1, 160, 160, 160])
@@ -103,7 +104,7 @@ def preprocess(image):
 
 
     print(itk.GetArrayFromImage(image).shape)
-    image = itk_crop_foreground(image, additional_crop_pixels=12)
+    image = itk_crop_foreground(image, additional_crop_pixels=2)
     print("cropped", itk.GetArrayFromImage(image).shape)
     image = itk.CastImageFilter[type(image), itk.Image[itk.F, 3]].New()(image)
     print("casted", itk.GetArrayFromImage(image).shape)
