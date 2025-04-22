@@ -57,10 +57,10 @@ class DiffusionDataset(dataset.Dataset):
 datasets_.append(DiffusionDataset(input_shape, "ebrahim-diffusion", "/playpen-raid1/tgreer/ebrahim_brains/data/degree_powers_normalized_dipy/degree_power_images/*", maximum_images=maximum_images, cache_filename=cache_filename))
 
 maximum_images=8000
-cache_filename="results/sarcoma/CPTAC-Sarcoma_cached_dataset.trch"
+cache_filename="results/sarcoma/"
 datasets_.append(dataset.PairedDICOMDataset(input_shape, "CPTAC-Sarcoma", 
     "/playpen-raid1/Data/TCIA-Sarcoma/manifest-MjbMt99Q1553106146386120388/Soft-tissue-Sarcoma/*/*/?.*/", match_regex=r"/(STS_[0-9]*)/", maximum_images=maximum_images, cache_filename=cache_filename) )
-cache_filename="results/HaN-Seg/HAN-Seg_cached_dataset.trch"
+cache_filename="results/HaN-Seg/"
 datasets_.append(dataset.PairedDataset(input_shape, "HAN-Seg", 
     "/playpen-raid1/Data/HaN-Seg/HaN-Seg/set_1/case_??/case_??_IMG_*.nrrd", match_regex=r"/(case_[0-9]*)/", maximum_images=maximum_images, cache_filename=cache_filename) )
 
