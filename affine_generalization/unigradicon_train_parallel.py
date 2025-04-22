@@ -82,7 +82,7 @@ def augmentify(network, rm=RandomMatrix()):
     augmenter2 = icon.FunctionFromMatrix(rm)
 
     augmenter = icon.TwoStepRegistration(
-        augmenter2, PostStep(augmenter, network.regis_net)
+            augmenter2, carl.PostStep(augmenter, network.regis_net)
     )
 
     network.regis_net = augmenter
