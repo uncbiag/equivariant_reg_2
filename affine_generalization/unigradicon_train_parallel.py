@@ -282,7 +282,6 @@ if __name__ == "__main__":
     #net.regis_net.load_state_dict(torch.load("results/unicarl-3/network_weights_15000"))
     #net.regis_net.load_state_dict(torch.load("results/UNICRAEL-FREOMTIOP/network_weights_95000"))
     #net.regis_net.load_state_dict(torch.load("results/gpu6-long-diffusion/network_weights_20000"))
-    u
     #net.regis_net.load_state_dict(torch.load("results/unigradicon_ctny_longdiffusion/network_weights_20000"))
     
 
