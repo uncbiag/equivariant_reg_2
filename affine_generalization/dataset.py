@@ -147,6 +147,7 @@ class PairedDataset(Dataset):
 
 class PairedDICOMDataset(PairedDataset):
     def read_image(self, path:str):
+      print(path)
       """
       Reads a DICOM series from a directory path and returns it as a tensor.
       

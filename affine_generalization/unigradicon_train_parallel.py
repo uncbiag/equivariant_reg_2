@@ -1,4 +1,4 @@
-####python3 -m torch.distributed.launch --nproc_per_node=4 --nnodes=1 --node_rank=0 --master_addr=152.2.132.94 --master_port=1234 unigradicon_train_parallel.py                                         
+#python3 -m torch.distributed.launch --nproc_per_node=4 --nnodes=1 --node_rank=0 --master_addr=152.2.132.93 --master_port=1232 unigradicon_train_parallel.py                                         
 
 
 
@@ -21,9 +21,97 @@ import torchvision.utils
 import os
 os.environ["OMP_NUM_THREADS"]="8"
 
+class RandomMatrix(icon.RegistrationModule):
+    def forward(self, a, b):
+        if len(a.shape) == 4:
+            noise = torch.randn(a.shape[0], 2, 2) * 13
+            noise = noise - noise.permute([0, 2, 1])
+            noise = torch.linalg.matrix_exp(noise)
+            noise = torch.cat([noise, torch.zeros(a.shape[0], 2, 1)], axis=2).to(
+                a.device
+            )
+            x = noise
+            x = torch.cat(
+                [
+                    x,
+                    torch.Tensor([[[0, 0, 1]]]).to(x.device).expand(x.shape[0], -1, -1),
+                ],
+                1,
+            )
+            x = torch.matmul(
+                torch.Tensor([[1, 0, 0.5], [0, 1, 0.5], [0, 0, 1]]).to(x.device), x
+            )
+            x = torch.matmul(
+                x,
+                torch.Tensor([[1, 0, -0.5], [0, 1, -0.5], [0, 0, 1]]).to(x.device),
+            )
+            return x
+        elif len(a.shape) == 5:
+            noise = torch.randn(a.shape[0], 3, 3) * .1
+            noise = noise - noise.permute([0, 2, 1])
+            noise = torch.linalg.matrix_exp(noise)
+            noise = torch.cat([noise, torch.zeros(a.shape[0], 3, 1)], axis=2).to(
+                a.device
+            )
+            x = noise
+            x = x + torch.randn(x.shape, device=x.device) * .15
+            x = torch.cat(
+                [
+                    x,
+                    torch.Tensor([[[0, 0, 0, 1]]])
+                    .to(x.device)
+                    .expand(x.shape[0], -1, -1),
+                ],
+                1,
+            )
+            x = torch.matmul(
+                torch.Tensor(
+                    [[1, 0, 0, 0.5], [0, 1, 0, 0.5], [0, 0, 1, 0.5], [0, 0, 0, 1]]
+                ).to(x.device),
+                x,
+            )
+            x = torch.matmul(
+                x,
+                torch.Tensor(
+                    [[1, 0, 0, -0.5], [0, 1, 0, -0.5], [0, 0, 1, -0.5], [0, 0, 0, 1]]
+                ).to(x.device),
+            )
+            return x
+def augmentify(network, rm=RandomMatrix()):
+    augmenter = carl.FunctionsFromMatrix(rm)
+    augmenter2 = icon.FunctionFromMatrix(rm)
+
+    augmenter = icon.TwoStepRegistration(
+        augmenter2, PostStep(augmenter, network.regis_net)
+    )
+
+    network.regis_net = augmenter
+    network.assign_identity_map(network.input_shape)
+    return network
+class SquaredLNCC(icon.losses.LNCC):
+    def __call__(self, image_A, image_B):
+        I = image_A
+        J = image_B
+        assert I.shape == J.shape, "The shape of image I and J sould be the same."
+
+        return torch.mean(
+            1
+            - ((self.blur(I * J) - (self.blur(I) * self.blur(J)))
+            / torch.sqrt(
+                (torch.relu(self.blur(I * I) - self.blur(I) ** 2) + 0.0001)
+                * (torch.relu(self.blur(J * J) - self.blur(J) ** 2) + 0.0001)
+            ))**2
+        )
+
+
+
 input_shape = [1, 1, 160, 160, 160]
-def make_net(dimension, input_shape):
-    unet = fpc.Equivariantize(fpc.SomeDownsampleNoDilationNet(dimension=dimension))
+def make_net(dimension, input_shape, equivariantize=True):
+    if equivariantize:
+        unet = fpc.Equivariantize(fpc.SomeDownsampleNoDilationNet(dimension=dimension))
+    else:
+        unet = fpc.SomeDownsampleNoDilationNet(dimension=dimension)
+
     ar = fpc.AttentionFeaturizer(unet, dimension=dimension)
     ts = ar
 
@@ -49,10 +137,10 @@ def make_net(dimension, input_shape):
              #ts,
              carl.RotationFunctionFromVectorField(networks.tallUNet2(dimension=dimension))
          )
-    net = icon.losses.GradientICONSparse(ts, icon.losses.SquaredLNCC(sigma=4), lmbda=1.5)
+    net = icon.losses.GradientICONSparse(ts, SquaredLNCC(sigma=4), lmbda=1.5)
     #net = icon.losses.DiffusionRegularizedNet(ts, icon.losses.SquaredLNCC(sigma=4), lmbda=10)
     net.assign_identity_map(input_shape)
-    net = carl.augmentify(net)
+    net = augmentify(net, rm=RandomMatrix())
     net.assign_identity_map(input_shape)
     net.train()
     return net
@@ -184,17 +272,23 @@ def train_batchfunction(
 
 
 if __name__ == "__main__":
+
     import datasets
 
-
-    net = make_net(3, input_shape)
-    #net.regis_net.load_state_dict(torch.load("results/unic-1/network_weights_20000"))
+    net = make_net(3, input_shape, False)
+    net.regis_net.load_state_dict(torch.load("/playpen-raid1/tgreer/equivariant_reg_2/affine_generalization/results/parallel no-_rotation/network_weights_230000"))
     #net.regis_net.load_state_dict(torch.load("results/gradicon_less_augment/network_weights_280000"))
-    net.regis_net.load_state_dict(torch.load("results/pure_bigger_convs/network_weights_100000"))
+    #net.regis_net.load_state_dict(torch.load("results/pure_bigger_convs/network_weights_100000"))
+    #net.regis_net.load_state_dict(torch.load("results/unicarl-3/network_weights_15000"))
+    #net.regis_net.load_state_dict(torch.load("results/UNICRAEL-FREOMTIOP/network_weights_95000"))
+    #net.regis_net.load_state_dict(torch.load("results/gpu6-long-diffusion/network_weights_20000"))
+    u
+    #net.regis_net.load_state_dict(torch.load("results/unigradicon_ctny_longdiffusion/network_weights_20000"))
+    
 
 
 
-    BATCH_SIZE = 3
+    BATCH_SIZE = 4
 
     train_batchfunction(
         net,
