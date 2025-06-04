@@ -94,6 +94,8 @@ for (fixed_path, moving_path) in tqdm(test_cases[:]):
     raw_moving = itk.imread(os.path.join(args.data_folder, moving_path))
 
     phi_AB, phi_BA = icon.itk_wrapper.register_pair(net, register.preprocess(raw_moving), register.preprocess(raw_fixed), finetune_steps=150)
+    import affine_decomposition
+    phi_AB = affine_decomposition.decompose_icon_itk_transform(phi_AB)
 
     dispfield_filter = itk.TransformToDisplacementFieldFilter[itk.Image[itk.Vector[itk.F, 3], 3], itk.D].New()
 

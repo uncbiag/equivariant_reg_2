@@ -4,10 +4,12 @@ import matplotlib.pyplot as plt
 import numpy as np
 import icon_registration.itk_wrapper
 
-moving = itk.imread("register_py/AbdomenMRCT_0005_0000.nii.gz")
-fixed = itk.imread("register_py/AbdomenMRCT_0005_0001.nii.gz")
+moving = itk.imread("register_py/bonefrags/bone_4.nrrd")
+fixed = itk.imread("register_py/bonefrags/bone_0.nrrd")
 
 phi_AB = itk.transformread("trans.hdf5")[0]
+
+voxels = 160
 
 def decompose_icon_itk_transform(phi_AB:itk.CompositeTransform):
 
@@ -16,9 +18,9 @@ def decompose_icon_itk_transform(phi_AB:itk.CompositeTransform):
     displacement_image = original_displacement_transform.GetDisplacementField()
     original_displacement_array = itk.GetArrayFromImage(displacement_image)
 
-    coordinates = np.mgrid[0:160, 0:160, 0:160]
+    coordinates = np.mgrid[0:voxels, 0:voxels, 0:voxels]
     coordinates = coordinates.transpose((3, 2, 1, 0))
-    coordinates = np.concatenate([coordinates, np.ones((160, 160, 160, 1))], axis=-1)
+    coordinates = np.concatenate([coordinates, np.ones((voxels, voxels, voxels, 1))], axis=-1)
 
     x = coordinates.reshape(-1, 4)
     y = original_displacement_array.reshape(-1, 3)
@@ -33,7 +35,7 @@ def decompose_icon_itk_transform(phi_AB:itk.CompositeTransform):
 
 
     error = error @ np.linalg.inv(Matrix.transpose())
-    error = error.reshape(160, 160, 160, 3)
+    error = error.reshape(voxels, voxels, voxels, 3)
     residual_displacement_transform = itk.DisplacementFieldTransform[(itk.D, 3)].New()
     itk_disp_field = itk.image_from_array(error, is_vector=True)
     residual_displacement_transform.SetDisplacementField(itk_disp_field)
@@ -52,6 +54,18 @@ def decompose_icon_itk_transform(phi_AB:itk.CompositeTransform):
     affine_decomposed_transform.PrependTransform(phi_AB.GetNthTransform(0))
     return affine_decomposed_transform
 
+def extract_icon_itk_transform(phi_AB):
+    phi_AB = decompose_icon_itk_transform(phi_AB)
+
+    affine_Transform = itk.CompositeTransform[itk.D, 3].New()
+
+    affine_Transform.PrependTransform(phi_AB.GetNthTransform(3))
+    affine_Transform.PrependTransform(phi_AB.GetNthTransform(1))
+    affine_Transform.PrependTransform(phi_AB.GetNthTransform(0))
+
+    return affine_Transform
+
+
 
 from register import torch, quantile
 def preprocess(image):
@@ -67,48 +81,49 @@ def preprocess(image):
 
     return image
 
-phi_AB_decomposed = decompose_icon_itk_transform(phi_AB)
-itk.transformwrite([phi_AB_decomposed], "decomposed.hdf5")
+if __name__ == "__main__":
+    phi_AB_decomposed = decompose_icon_itk_transform(phi_AB)
+    itk.transformwrite([phi_AB_decomposed], "decomposed.hdf5")
 
 
-moving = itk.CastImageFilter[type(moving), itk.Image[itk.F, 3]].New()(moving)
-interpolator = itk.LinearInterpolateImageFunction.New(moving)
-warped_moving_image = itk.resample_image_filter(
-        moving,
-        transform=phi_AB,
-        interpolator=interpolator,
-        use_reference_image=True,
-        reference_image=fixed
-        )
-interpolator_d = itk.LinearInterpolateImageFunction.New(moving)
-warped_moving_image_d = itk.resample_image_filter(
-        moving,
-        transform=phi_AB_decomposed,
-        interpolator=interpolator_d,
-        use_reference_image=True,
-        reference_image=fixed
-        )
+    moving = itk.CastImageFilter[type(moving), itk.Image[itk.F, 3]].New()(moving)
+    interpolator = itk.LinearInterpolateImageFunction.New(moving)
+    warped_moving_image = itk.resample_image_filter(
+            moving,
+            transform=phi_AB,
+            interpolator=interpolator,
+            use_reference_image=True,
+            reference_image=fixed
+            )
+    interpolator_d = itk.LinearInterpolateImageFunction.New(moving)
+    warped_moving_image_d = itk.resample_image_filter(
+            moving,
+            transform=phi_AB_decomposed,
+            interpolator=interpolator_d,
+            use_reference_image=True,
+            reference_image=fixed
+            )
 
-plt.clf()
+    plt.clf()
 
-plt.ion()
-print(fixed.shape)
+    plt.ion()
+    print(fixed.shape)
 
-slice_ = 80
+    slice_ = 80
 
-for _ in range(0):
-    plt.imshow(np.minimum(10000, -np.array(preprocess(warped_moving_image_d)[:, slice_])), cmap="Grays")
+    for _ in range(0):
+        plt.imshow(np.minimum(10000, -np.array(preprocess(warped_moving_image_d)[:, slice_])), cmap="Grays")
+        plt.show()
+        plt.pause(.9)
+
+        plt.imshow(np.minimum(10000, -np.array(preprocess(warped_moving_image)[:, slice_])), cmap="Grays")
+        plt.show()
+        plt.pause(.9)
+
+    plt.imshow(np.minimum(10000, -np.array(itk.checker_board_image_filter(preprocess(warped_moving_image_d), preprocess(fixed))[:, slice_])), cmap="Grays")
+    #plt.imshow(np.minimum(100, -np.original_displacement_array(preprocess(warped_moving_image)[:, 50])), cmap="Grays")
+    #plt.imshow(np.minimum(100, -np.original_displacement_array(preprocess(fixed)[:, 50])), cmap="Grays")
     plt.show()
-    plt.pause(.9)
-
-    plt.imshow(np.minimum(10000, -np.array(preprocess(warped_moving_image)[:, slice_])), cmap="Grays")
-    plt.show()
-    plt.pause(.9)
-
-plt.imshow(np.minimum(10000, -np.array(itk.checker_board_image_filter(preprocess(warped_moving_image_d), preprocess(fixed))[:, slice_])), cmap="Grays")
-#plt.imshow(np.minimum(100, -np.original_displacement_array(preprocess(warped_moving_image)[:, 50])), cmap="Grays")
-#plt.imshow(np.minimum(100, -np.original_displacement_array(preprocess(fixed)[:, 50])), cmap="Grays")
-plt.show()
-plt.pause(.4)
-#plt.show()
+    plt.pause(.4)
+    #plt.show()
 

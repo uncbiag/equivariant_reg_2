@@ -205,7 +205,7 @@ def train_batchfunction(
 
     visualization_moving, visualization_fixed = [m[:8].to(device) for m in make_batch()]
 
-    optimizer = torch.optim.Adam(ddp_model.parameters(), lr=0.0001)
+    optimizer = torch.optim.Adam(ddp_model.parameters(), lr=0.00002)
 
 
 
@@ -277,6 +277,7 @@ if __name__ == "__main__":
 
     net = make_net(3, input_shape, False)
     net.regis_net.load_state_dict(torch.load("/playpen-raid1/tgreer/equivariant_reg_2/affine_generalization/results/parallel no-_rotation/network_weights_230000"))
+    net.regis_net = net.regis_net.netPsi.netPsi
     #net.regis_net.load_state_dict(torch.load("results/gradicon_less_augment/network_weights_280000"))
     #net.regis_net.load_state_dict(torch.load("results/pure_bigger_convs/network_weights_100000"))
     #net.regis_net.load_state_dict(torch.load("results/unicarl-3/network_weights_15000"))

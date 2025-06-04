@@ -18,17 +18,21 @@ def get_model():
     #net.regis_net.load_state_dict(torch.load("results/pure_bigger_convs/network_weights_100000"))
     #net.regis_net.load_state_dict(torch.load("results/mrct_finally/network_weights_60000"))
     #net.regis_net.load_state_dict(torch.load("/playpen-raid1/tgreer/equivariant_reg_2/affine_generalization/results/unigradicon_ctny_longdiffusion/network_weights_205000"))
-    net.regis_net.load_state_dict(torch.load("/playpen-raid1/tgreer/equivariant_reg_2/affine_generalization/results/parallel no-_rotation/network_weights_230000"))
+    #net.regis_net.load_state_dict(torch.load("/playpen-raid1/tgreer/equivariant_reg_2/affine_generalization/results/parallel no-_rotation/network_weights_230000"))
+    net.regis_net.load_state_dict(torch.load("/playpen-raid1/tgreer/equivariant_reg_2/affine_generalization/results/longleaf_unicarl_8"))
+    #net.regis_net.load_state_dict(torch.load("/playpen-raid1/tgreer/equivariant_reg_2/affine_generalization/results/round2/network_weights_15000"))
+    #net.regis_net = net.regis_net.netPsi.netPsi
+    #net.regis_net.load_state_dict(torch.load("/playpen-raid1/tgreer/equivariant_reg_2/affine_generalization/results/continue_low_learn/network_weights_15000"))
 
     #net.regis_net.load_state_dict(torch.load("results/add_8k_mrsegmentator/network_weights_145000"))
     #net = icon_registration.losses.DiffusionRegularizedNet(icon_registration.FunctionFromVectorField(icon_registration.networks.tallUNet2(dimension=3)), icon_registration.losses.SquaredLNCC(3),  1.5)
     #net = icon_registration.losses.BendingEnergyNet(net.regis_net, icon_registration.losses.SquaredLNCC(3),.15)
     #net = icon_registration.losses.GradientICONSparse(net.regis_net, icon_registration.losses.LNCCOnlyInterpolated(3),  1.5)
+    net.regis_net = net.regis_net.netPsi.netPsi
     net.assign_identity_map([1, 1, 160, 160, 160])
     #net = icon_registration.carl.augmentify(net)
     #net.assign_identity_map([1, 1, 160, 160, 160])
     net.cuda()
-    net.regis_net = net.regis_net.netPsi.netPsi
 
 
     net.eval()
@@ -99,14 +103,14 @@ def reorient(moving):
                                             use_image_direction=True)
 
 def preprocess(image):
+    image = itk.CastImageFilter[type(image), itk.Image[itk.F, 3]].New()(image)
     image = reorient(image)
 
 
 
     print(itk.GetArrayFromImage(image).shape)
-    image = itk_crop_foreground(image, additional_crop_pixels=2)
+    image = itk_crop_foreground(image, additional_crop_pixels=9)
     print("cropped", itk.GetArrayFromImage(image).shape)
-    image = itk.CastImageFilter[type(image), itk.Image[itk.F, 3]].New()(image)
     print("casted", itk.GetArrayFromImage(image).shape)
     min_ = quantile(torch.tensor(np.array(image)), .01).item()
     max_ = quantile(torch.tensor(np.array(image)), .99).item()
